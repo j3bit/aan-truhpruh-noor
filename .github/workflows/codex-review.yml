@@ -10,17 +10,24 @@ permissions:
 
 jobs:
   codex-review:
-    if: ${{ github.event.pull_request.draft == false && secrets.OPENAI_API_KEY != '' }}
+    if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Skip Codex Review (OPENAI_API_KEY not configured)
+        if: ${{ env.OPENAI_API_KEY == '' }}
+        run: echo "Skipping Codex Review because OPENAI_API_KEY is not configured."
+
       - name: Run Codex Action (Read-Only)
+        if: ${{ env.OPENAI_API_KEY != '' }}
         uses: openai/codex-action@v1
         with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          openai-api-key: ${{ env.OPENAI_API_KEY }}
           prompt: |
             Review this pull request for correctness, regression risk, and missing tests.
             Prioritize concrete bugs and behavioral risks over style preferences.
