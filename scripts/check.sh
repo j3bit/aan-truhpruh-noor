@@ -78,6 +78,12 @@ if [[ ! -f "${ADAPTER}" ]]; then
   exit 2
 fi
 
+CONTRACT_VALIDATOR="${REPO_ROOT}/scripts/validate-contracts.sh"
+if [[ ! -f "${CONTRACT_VALIDATOR}" ]]; then
+  error "Contract validator not found: ${CONTRACT_VALIDATOR}"
+  exit 2
+fi
+
 ARGS=(--project-dir "${PROJECT_DIR}")
 if [[ "${CHANGED_ONLY}" -eq 1 ]]; then
   ARGS+=(--changed-only)
@@ -86,6 +92,21 @@ fi
 echo "[check] stack=${STACK} project_dir=${PROJECT_DIR} changed_only=${CHANGED_ONLY}"
 
 set +e
+echo "[check] RUN: contract preflight"
+bash "${CONTRACT_VALIDATOR}" "${ARGS[@]}"
+CONTRACT_RESULT=$?
+if [[ "${CONTRACT_RESULT}" -ne 0 ]]; then
+  if [[ "${CONTRACT_RESULT}" -eq 1 ]]; then
+    echo "[check] FAIL"
+    set -e
+    exit 1
+  fi
+  echo "[check] ERROR"
+  set -e
+  exit 2
+fi
+
+echo "[check] RUN: stack adapter"
 bash "${ADAPTER}" "${ARGS[@]}"
 RESULT=$?
 set -e

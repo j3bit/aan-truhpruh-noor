@@ -1,7 +1,8 @@
 # TASKS-XXXX: <feature-name>
 
 ## Metadata
-- PRD: `tasks/prd-XXXX-<feature-name>.md`
+- File name: `tasks/tasks-<4digit>-<slug>.md`
+- PRD: `tasks/prd-<4digit>-<slug>.md`
 - Owner:
 - Last Updated:
 
@@ -24,6 +25,10 @@
 - Test Plan:
   1. 
   2. 
+- Done Definition:
+  1. Acceptance criteria are satisfied.
+  2. Test plan was executed and evidenced.
+  3. `./scripts/check.sh --stack <python|node|go>` exits with code `0`.
 - Notes:
   - 
 
@@ -39,6 +44,10 @@
 - Test Plan:
   1. 
   2. 
+- Done Definition:
+  1. Acceptance criteria are satisfied.
+  2. Test plan was executed and evidenced.
+  3. `./scripts/check.sh --stack <python|node|go>` exits with code `0`.
 - Notes:
   - 
 

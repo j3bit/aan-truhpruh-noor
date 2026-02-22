@@ -11,4 +11,5 @@ These rules govern all implementation work in this repository.
 7. **Parallel isolation**: parallel tasks run in isolated branches/workspaces only.
 8. **Reproducible commands**: all checks must be scriptable and committed.
 9. **Security defaults**: least privilege, explicit approvals, no secret commits.
-10. **Regression discipline**: on failure, add or update eval/test coverage.
+10. **Trace logging required**: eval/automation runs must record trace evidence, or explicitly capture why fallback mode was used.
+11. **Regression discipline**: on failure, add or update eval/test coverage.

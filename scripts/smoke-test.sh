@@ -22,8 +22,17 @@ run_bootstrap_check() {
   assert_file "${target}/AGENTS.md"
   assert_file "${target}/tasks/process-rules.md"
   assert_file "${target}/scripts/check.sh"
+  assert_file "${target}/scripts/validate-contracts.sh"
   assert_file "${target}/.github/workflows/check.yml"
   assert_file "${target}/evals/run-evals.sh"
+  assert_file "${target}/evals/lib/collect-trace.sh"
+  assert_file "${target}/evals/lib/parse-trace.sh"
+  assert_file "${target}/evals/cases/01-required-artifacts.case.sh"
+  assert_file "${target}/evals/cases/02-contract-trace-rule.case.sh"
+  assert_file "${target}/evals/cases/03-gate-filename-enforcement.case.sh"
+  assert_file "${target}/evals/cases/04-gate-done-definition-enforcement.case.sh"
+  assert_file "${target}/evals/cases/05-trace-hybrid-fallback.case.sh"
+  assert_file "${target}/evals/cases/06-metrics-thrash-unexpected.case.sh"
 
   if [[ "${stack}" == "python" ]]; then
     if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then

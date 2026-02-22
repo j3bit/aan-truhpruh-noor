@@ -32,13 +32,18 @@ cd ./my-app
 ```
 
 4. Create your first PRD and task list from templates in `tasks/templates/`.
+5. Validate contract rules explicitly (optional, also runs inside `check.sh`):
+
+```bash
+./scripts/validate-contracts.sh --project-dir .
+```
 
 ## Standard Routine
 
-1. Write PRD (`tasks/prd-xxxx-*.md`)
-2. Write atomic task list (`tasks/tasks-xxxx-*.md`)
+1. Write PRD (`tasks/prd-<4digit>-<slug>.md`)
+2. Write atomic task list (`tasks/tasks-<4digit>-<slug>.md`)
 3. Execute one task at a time
-4. Pass gate (`scripts/check.sh`)
+4. Pass gate (`scripts/check.sh`) (includes contract validation)
 5. Diff-first review and merge
 6. Run evals (`evals/run-evals.sh`)
 
@@ -60,6 +65,13 @@ cd ./my-app
 ```bash
 ./scripts/check.sh --stack <python|node|go> [--changed-only]
 ```
+
+Contract rules validated by the gate:
+
+- `tasks/process-rules.md` includes `Trace logging required`
+- Task files use `tasks/tasks-<4digit>-<slug>.md`
+- PRD files use `tasks/prd-<4digit>-<slug>.md`
+- Every `### T-...` block includes `Dependencies`, `Acceptance Criteria`, `Test Plan`, and `Done Definition`
 
 Exit codes:
 
