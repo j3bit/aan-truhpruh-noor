@@ -70,6 +70,7 @@ Contract rules validated by the gate:
 - `tasks/process-rules.md` includes `Trace logging required`
 - Task files use `tasks/tasks-<4digit>-<slug>.md`
 - PRD files use `tasks/prd-<4digit>-<slug>.md`
+- PRD files include section headings for `Problem`, `Goals`, `Non-goals`, `Success Metrics`, `Constraints`, `Test Strategy`, and `Rollout`
 - Every `### T-...` block includes `Dependencies`, `Acceptance Criteria`, `Test Plan`, and `Done Definition`
 
 Exit codes:
@@ -83,3 +84,4 @@ Exit codes:
 - `ERROR: adapter not found`: verify `templates/stacks/<stack>/check.adapter.sh` exists.
 - `ERROR: <tool> not found`: install required runtime (Python/Node/Go).
 - CI failure on smoke test: run `./scripts/smoke-test.sh` locally and inspect missing files.
+- CI now runs root gate only when it detects root stack markers (`go.mod`, `package.json`, Python project markers).
