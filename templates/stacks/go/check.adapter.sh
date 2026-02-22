@@ -34,7 +34,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-cd "${PROJECT_DIR}"
+if [[ ! -d "${PROJECT_DIR}" ]]; then
+  echo "[go-check] ERROR: project directory does not exist: ${PROJECT_DIR}" >&2
+  exit 2
+fi
+
+cd -- "${PROJECT_DIR}"
+PROJECT_DIR="$(pwd -P)"
 
 if ! command -v go >/dev/null 2>&1; then
   echo "[go-check] ERROR: go is not installed" >&2

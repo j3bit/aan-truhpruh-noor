@@ -72,6 +72,9 @@ if [[ ! -d "${PROJECT_DIR}" ]]; then
   exit 2
 fi
 
+# Normalize to an absolute path so stack adapters receive stable paths.
+PROJECT_DIR="$(cd -- "${PROJECT_DIR}" && pwd -P)"
+
 ADAPTER="${REPO_ROOT}/templates/stacks/${STACK}/check.adapter.sh"
 if [[ ! -f "${ADAPTER}" ]]; then
   error "Adapter not found: ${ADAPTER}"
