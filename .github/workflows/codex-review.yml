@@ -19,9 +19,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Skip Codex Review (OPENAI_API_KEY not configured)
+      - name: Fail when OPENAI_API_KEY is not configured
         if: ${{ env.OPENAI_API_KEY == '' }}
-        run: echo "Skipping Codex Review because OPENAI_API_KEY is not configured."
+        run: |
+          echo "OPENAI_API_KEY is not configured, so Codex automated review cannot run."
+          echo "Human reviewer approval is required before merge."
+          exit 1
 
       - name: Run Codex Action (Read-Only)
         if: ${{ env.OPENAI_API_KEY != '' }}
