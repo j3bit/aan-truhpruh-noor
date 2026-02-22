@@ -1,0 +1,11 @@
+{
+  "name": "node-hello",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node --check index.js test/basic.test.js",
+    "typecheck": "node -e \"console.log('typecheck: no-op for template')\"",
+    "test": "node --test"
+  }
+}

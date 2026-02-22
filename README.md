@@ -1,0 +1,74 @@
+# __PROJECT_NAME__ AI Coding Bootstrap Template
+
+This repository is a stack-neutral bootstrap template for running AI coding workflows with consistent process controls.
+
+## What This Template Provides
+
+- Contract layer: PRD + atomic task templates + process rules
+- Procedure layer: `AGENTS.md` operating policy
+- Execution layer: single gate entrypoint with stack adapters
+- Quality layer: CI gates + eval runner + runbooks
+- Bootstrap UX: script to generate a new repository with chosen starter stack
+
+## Quickstart (10 Minutes)
+
+1. Validate this template:
+
+```bash
+./scripts/smoke-test.sh
+```
+
+2. Bootstrap a new project:
+
+```bash
+./scripts/bootstrap-new-project.sh --name my-app --stack python
+```
+
+3. Enter the generated project and run gate:
+
+```bash
+cd ./my-app
+./scripts/check.sh --stack python
+```
+
+4. Create your first PRD and task list from templates in `tasks/templates/`.
+
+## Standard Routine
+
+1. Write PRD (`tasks/prd-xxxx-*.md`)
+2. Write atomic task list (`tasks/tasks-xxxx-*.md`)
+3. Execute one task at a time
+4. Pass gate (`scripts/check.sh`)
+5. Diff-first review and merge
+6. Run evals (`evals/run-evals.sh`)
+
+## Directory Guide
+
+- `AGENTS.md`: non-negotiable operating rules
+- `tasks/`: PRD/task contracts and templates
+- `scripts/`: gate/bootstrap/smoke scripts
+- `templates/stacks/`: stack-specific gate adapters
+- `ralph/`: loop config and role prompts
+- `.github/workflows/`: CI and Codex review workflows
+- `evals/`: regression checks for process quality
+- `docs/runbook/`: operational guidance
+- `.agents/skills/`: reserved for future skill bundles
+- `examples/`: stack starter samples
+
+## check.sh Contract
+
+```bash
+./scripts/check.sh --stack <python|node|go> [--changed-only]
+```
+
+Exit codes:
+
+- `0`: pass
+- `1`: check failure
+- `2`: configuration/input error
+
+## Troubleshooting
+
+- `ERROR: adapter not found`: verify `templates/stacks/<stack>/check.adapter.sh` exists.
+- `ERROR: <tool> not found`: install required runtime (Python/Node/Go).
+- CI failure on smoke test: run `./scripts/smoke-test.sh` locally and inspect missing files.

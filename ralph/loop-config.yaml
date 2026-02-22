@@ -1,0 +1,19 @@
+version: 1
+workflow_name: bootstrap-task-loop
+completion_signal: LOOP_COMPLETE
+max_iterations: 8
+max_runtime_minutes: 30
+
+roles:
+  planner_prompt: ralph/planner.prompt.md
+  builder_prompt: ralph/builder.prompt.md
+  tester_prompt: ralph/tester.prompt.md
+
+gates:
+  default_stack: python
+  command_template: ./scripts/check.sh --stack {{stack}}
+
+operating_rules:
+  one_task_at_a_time: true
+  require_gate_pass_for_completion: true
+  require_diff_review: true
