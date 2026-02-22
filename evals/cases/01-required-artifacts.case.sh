@@ -13,6 +13,7 @@ required_paths=(
   "evals/run-evals.sh"
   "evals/lib/collect-trace.sh"
   "evals/lib/parse-trace.sh"
+  "evals/cases/07-bootstrap-artifact-hygiene.case.sh"
   "docs/runbook/01-workflow.md"
   "docs/runbook/05-evals.md"
 )

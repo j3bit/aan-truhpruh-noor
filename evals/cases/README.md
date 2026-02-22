@@ -46,3 +46,12 @@ Optional metadata JSON keys for `EVAL_META_PATH`:
 - `retries` (number, default `0`)
 - `skill_triggered` (boolean, default `false`)
 - `allow_unexpected_files` (boolean, default `false`)
+
+## Trace Status Semantics
+
+When cases use `evals/lib/collect-trace.sh`, `trace_status` in metadata follows:
+
+- `success`: trace collection and parsing completed.
+- `fallback`: trace collection failed and the helper fell back to local metrics (`hybrid` mode).
+- `skipped`: trace collection intentionally skipped (`local-only` mode).
+- `failed`: trace collection failed in strict `trace-only` mode.

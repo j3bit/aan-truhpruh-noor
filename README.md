@@ -12,10 +12,12 @@ This repository is a stack-neutral bootstrap template for running AI coding work
 
 ## Quickstart (10 Minutes)
 
-1. Validate this template:
+1. Validate this template repository:
 
 ```bash
+./scripts/validate-contracts.sh --project-dir .
 ./scripts/smoke-test.sh
+./evals/run-evals.sh
 ```
 
 2. Bootstrap a new project:
@@ -32,11 +34,6 @@ cd ./my-app
 ```
 
 4. Create your first PRD and task list from templates in `tasks/templates/`.
-5. Validate contract rules explicitly (optional, also runs inside `check.sh`):
-
-```bash
-./scripts/validate-contracts.sh --project-dir .
-```
 
 ## Standard Routine
 
@@ -63,8 +60,10 @@ cd ./my-app
 ## check.sh Contract
 
 ```bash
-./scripts/check.sh --stack <python|node|go> [--changed-only]
+./scripts/check.sh --stack <python|node|go> [--changed-only] [--project-dir <path>]
 ```
+
+`--project-dir` is useful when running the gate from the template root against a generated project path.
 
 Contract rules validated by the gate:
 

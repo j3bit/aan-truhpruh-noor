@@ -7,6 +7,10 @@ contract -> atomic execution -> gate -> review -> merge -> eval.
 
 ## Operating Steps
 
+Template maintenance commands are documented in `README.md` Quickstart.
+
+Generated project loop (bootstrap output):
+
 1. Create PRD from `tasks/templates/prd.template.md` and save as `tasks/prd-<4digit>-<slug>.md`.
 2. Create atomic tasks from `tasks/templates/tasks.template.md` and save as `tasks/tasks-<4digit>-<slug>.md`.
 3. Start one unblocked task only.

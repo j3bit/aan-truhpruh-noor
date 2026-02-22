@@ -20,6 +20,12 @@ Trace-aware mode options:
   --trace-timeout-seconds 90
 ```
 
+Local-only mode (no trace attempt):
+
+```bash
+./evals/run-evals.sh --trace-mode local-only
+```
+
 ## Case Authoring
 
 1. Add `*.case.sh` to `evals/cases/`.
@@ -45,3 +51,5 @@ Each JSONL result record includes:
 - `retries`
 - `unexpected_files`
 - `skill_triggered`
+
+For trace metadata status semantics, see `evals/cases/README.md`.

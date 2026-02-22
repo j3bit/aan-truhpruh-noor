@@ -55,5 +55,9 @@ jobs:
           cd examples/go-hello
           ../../scripts/check.sh --stack go
 
-      - name: Run baseline evals
+      - name: Run evals (hybrid)
         run: ./evals/run-evals.sh
+
+      - name: Run evals (local-only)
+        if: ${{ github.event_name == 'push' }}
+        run: ./evals/run-evals.sh --trace-mode local-only

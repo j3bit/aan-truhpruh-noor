@@ -33,6 +33,7 @@ run_bootstrap_check() {
   assert_file "${target}/evals/cases/04-gate-done-definition-enforcement.case.sh"
   assert_file "${target}/evals/cases/05-trace-hybrid-fallback.case.sh"
   assert_file "${target}/evals/cases/06-metrics-thrash-unexpected.case.sh"
+  assert_file "${target}/evals/cases/07-bootstrap-artifact-hygiene.case.sh"
 
   if [[ "${stack}" == "python" ]]; then
     if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
