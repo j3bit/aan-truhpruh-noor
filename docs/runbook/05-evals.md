@@ -20,6 +20,12 @@ Trace-aware mode options:
   --trace-timeout-seconds 90
 ```
 
+Local-only mode (no trace attempt):
+
+```bash
+./evals/run-evals.sh --trace-mode local-only
+```
+
 ## Case Authoring
 
 1. Add `*.case.sh` to `evals/cases/`.
@@ -45,3 +51,12 @@ Each JSONL result record includes:
 - `retries`
 - `unexpected_files`
 - `skill_triggered`
+
+## Trace Status Semantics
+
+When cases invoke `evals/lib/collect-trace.sh`, metadata status values mean:
+
+- `success`: trace collection and parsing succeeded.
+- `fallback`: trace collection failed and hybrid mode used local metrics.
+- `skipped`: trace collection intentionally skipped in `local-only` mode.
+- `failed`: trace collection failed in `trace-only` mode.

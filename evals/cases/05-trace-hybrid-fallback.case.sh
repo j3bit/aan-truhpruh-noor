@@ -28,9 +28,25 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-jq -e '
-  (.trace_status == "fallback")
-  and (.loop_count == 0)
-  and (.retries == 0)
-  and (.skill_triggered == false)
-' "${META_PATH}" >/dev/null
+case "${TRACE_MODE}" in
+  hybrid)
+    jq -e '
+      (.trace_status == "fallback")
+      and (.loop_count == 0)
+      and (.retries == 0)
+      and (.skill_triggered == false)
+    ' "${META_PATH}" >/dev/null
+    ;;
+  local-only)
+    jq -e '
+      (.trace_status == "skipped")
+      and (.loop_count == 0)
+      and (.retries == 0)
+      and (.skill_triggered == false)
+    ' "${META_PATH}" >/dev/null
+    ;;
+  *)
+    echo "[case-05] unsupported trace mode for this case: ${TRACE_MODE}" >&2
+    exit 1
+    ;;
+esac

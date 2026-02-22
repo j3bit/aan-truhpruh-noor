@@ -12,10 +12,12 @@ This repository is a stack-neutral bootstrap template for running AI coding work
 
 ## Quickstart (10 Minutes)
 
-1. Validate this template:
+1. Validate this template repository:
 
 ```bash
+./scripts/validate-contracts.sh --project-dir .
 ./scripts/smoke-test.sh
+./evals/run-evals.sh
 ```
 
 2. Bootstrap a new project:
@@ -32,13 +34,17 @@ cd ./my-app
 ```
 
 4. Create your first PRD and task list from templates in `tasks/templates/`.
-5. Validate contract rules explicitly (optional, also runs inside `check.sh`):
 
-```bash
-./scripts/validate-contracts.sh --project-dir .
-```
+## Operating Modes
 
-## Standard Routine
+Template maintenance (this repository):
+
+1. Validate contracts: `./scripts/validate-contracts.sh --project-dir .`
+2. Validate bootstrap behavior: `./scripts/smoke-test.sh`
+3. Run evals (hybrid): `./evals/run-evals.sh`
+4. Run evals (local-only): `./evals/run-evals.sh --trace-mode local-only`
+
+Generated project execution (new repo created by bootstrap):
 
 1. Write PRD (`tasks/prd-<4digit>-<slug>.md`)
 2. Write atomic task list (`tasks/tasks-<4digit>-<slug>.md`)
@@ -63,8 +69,10 @@ cd ./my-app
 ## check.sh Contract
 
 ```bash
-./scripts/check.sh --stack <python|node|go> [--changed-only]
+./scripts/check.sh --stack <python|node|go> [--changed-only] [--project-dir <path>]
 ```
+
+`--project-dir` is useful when running the gate from the template root against a generated project path.
 
 Contract rules validated by the gate:
 

@@ -36,11 +36,18 @@ A task is done only when all items are true:
 
 ## Standard Commands
 
+Generated project operations:
+
 - Gate entrypoint: `./scripts/check.sh --stack <python|node|go>`
 - Changed-only gate: `./scripts/check.sh --stack <python|node|go> --changed-only`
 - Bootstrap a new repo: `./scripts/bootstrap-new-project.sh --name <project-name> --stack <python|node|go>`
+
+Template maintenance operations (run in this template repository):
+
+- Validate contracts only: `./scripts/validate-contracts.sh --project-dir .`
 - Validate bootstrap template: `./scripts/smoke-test.sh`
-- Run process evals: `./evals/run-evals.sh`
+- Run process evals (hybrid): `./evals/run-evals.sh`
+- Run process evals (local-only): `./evals/run-evals.sh --trace-mode local-only`
 
 ## Security Defaults
 

@@ -9,6 +9,32 @@ assert_file() {
   [[ -f "$path" ]] || { echo "[smoke] ERROR: missing file: $path" >&2; exit 1; }
 }
 
+assert_no_bootstrap_transients() {
+  local target="$1"
+
+  local found
+
+  found="$(find "${target}" -type d \( -name '__pycache__' -o -name '.cache' \) -print -quit)"
+  if [[ -n "${found}" ]]; then
+    echo "[smoke] ERROR: bootstrap output contains transient cache directory: ${found}" >&2
+    exit 1
+  fi
+
+  found="$(find "${target}" -type f \( -name '*.pyc' -o -name '*.pyo' \) -print -quit)"
+  if [[ -n "${found}" ]]; then
+    echo "[smoke] ERROR: bootstrap output contains transient bytecode file: ${found}" >&2
+    exit 1
+  fi
+
+  if [[ -d "${target}/evals/results" ]]; then
+    found="$(find "${target}/evals/results" -type f -name '*.jsonl' -print -quit)"
+    if [[ -n "${found}" ]]; then
+      echo "[smoke] ERROR: bootstrap output contains eval result artifact: ${found}" >&2
+      exit 1
+    fi
+  fi
+}
+
 run_bootstrap_check() {
   local stack="$1"
   local root_dir="$2"
@@ -33,6 +59,9 @@ run_bootstrap_check() {
   assert_file "${target}/evals/cases/04-gate-done-definition-enforcement.case.sh"
   assert_file "${target}/evals/cases/05-trace-hybrid-fallback.case.sh"
   assert_file "${target}/evals/cases/06-metrics-thrash-unexpected.case.sh"
+  assert_file "${target}/evals/cases/07-bootstrap-artifact-hygiene.case.sh"
+
+  assert_no_bootstrap_transients "${target}"
 
   if [[ "${stack}" == "python" ]]; then
     if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then

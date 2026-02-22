@@ -13,6 +13,11 @@ usage() {
 Usage:
   ./scripts/check.sh --stack <python|node|go> [--changed-only] [--project-dir <path>]
 
+Notes:
+  --project-dir lets you run checks for a target project path.
+  Example (from template root):
+    ./scripts/check.sh --stack python --project-dir ./examples/python-hello
+
 Exit Codes:
   0: all checks passed
   1: one or more checks failed

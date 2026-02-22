@@ -108,6 +108,20 @@ copy_item() {
   fi
 }
 
+prune_transient_artifacts() {
+  local target_root="$1"
+
+  while IFS= read -r -d '' cache_dir; do
+    rm -rf "${cache_dir}"
+  done < <(find "${target_root}" -type d \( -name '__pycache__' -o -name '.cache' \) -print0)
+
+  find "${target_root}" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+
+  if [[ -d "${target_root}/evals/results" ]]; then
+    find "${target_root}/evals/results" -type f -name '*.jsonl' -delete
+  fi
+}
+
 copy_item AGENTS.md
 copy_item .gitignore
 copy_item tasks
@@ -142,6 +156,8 @@ done < <(find "${DEST}" -type f \( -name '*.md' -o -name '*.sh' -o -name '*.yml'
 while IFS= read -r -d '' file; do
   chmod +x "${file}"
 done < <(find "${DEST}" -type f \( -name '*.sh' \) -print0)
+
+prune_transient_artifacts "${DEST}"
 
 echo "[bootstrap] Project created at ${DEST}"
 echo "[bootstrap] Suggested next steps:"
