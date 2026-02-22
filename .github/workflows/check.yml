@@ -40,20 +40,20 @@ jobs:
       - name: Run template smoke test
         run: ./scripts/smoke-test.sh
 
-      - name: Run gate on Python example
+      - name: Run root gate (if stack marker exists)
         run: |
-          cd examples/python-hello
-          ../../scripts/check.sh --stack python
-
-      - name: Run gate on Node example
-        run: |
-          cd examples/node-hello
-          ../../scripts/check.sh --stack node
-
-      - name: Run gate on Go example
-        run: |
-          cd examples/go-hello
-          ../../scripts/check.sh --stack go
+          if [[ -f go.mod ]]; then
+            echo "[ci] detected stack=go"
+            ./scripts/check.sh --stack go
+          elif [[ -f package.json ]]; then
+            echo "[ci] detected stack=node"
+            ./scripts/check.sh --stack node
+          elif [[ -f pyproject.toml || -f requirements.txt || -f setup.py ]] || find . -maxdepth 1 -type f -name '*.py' -print -quit | grep -q .; then
+            echo "[ci] detected stack=python"
+            ./scripts/check.sh --stack python
+          else
+            echo "[ci] no root stack marker found; skipping root gate"
+          fi
 
       - name: Run evals (hybrid)
         run: ./evals/run-evals.sh

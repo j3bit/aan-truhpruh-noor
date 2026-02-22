@@ -195,6 +195,92 @@ validate_task_file_block_contract() {
   fi
 }
 
+validate_prd_file_required_sections() {
+  local file="$1"
+  local rel_path="$2"
+
+  if ! awk '
+    BEGIN {
+      has_problem = 0
+      has_goals = 0
+      has_non_goals = 0
+      has_success_metrics = 0
+      has_constraints = 0
+      has_test_strategy = 0
+      has_rollout = 0
+      failed = 0
+    }
+
+    /^##[[:space:]]/ {
+      heading = tolower($0)
+
+      if (index(heading, "problem") > 0) {
+        has_problem = 1
+      }
+      if (index(heading, "non-goals") > 0 || index(heading, "non goals") > 0) {
+        has_non_goals = 1
+      }
+      if (index(heading, "goal") > 0 && index(heading, "non-goals") == 0 && index(heading, "non goals") == 0) {
+        has_goals = 1
+      }
+      if (index(heading, "success metrics") > 0) {
+        has_success_metrics = 1
+      }
+      if (index(heading, "constraints") > 0) {
+        has_constraints = 1
+      }
+      if (index(heading, "test strategy") > 0) {
+        has_test_strategy = 1
+      }
+      if (index(heading, "rollout") > 0) {
+        has_rollout = 1
+      }
+    }
+
+    END {
+      missing = ""
+
+      if (!has_problem) {
+        missing = missing " Problem"
+      }
+      if (!has_goals) {
+        missing = missing " Goals"
+      }
+      if (!has_non_goals) {
+        missing = missing " Non-goals"
+      }
+      if (!has_success_metrics) {
+        missing = missing " Success Metrics"
+      }
+      if (!has_constraints) {
+        missing = missing " Constraints"
+      }
+      if (!has_test_strategy) {
+        missing = missing " Test Strategy"
+      }
+      if (!has_rollout) {
+        missing = missing " Rollout"
+      }
+
+      if (missing != "") {
+        printf("[contracts] FAIL: %s missing PRD sections:%s\n", file_path, missing) > "/dev/stderr"
+        failed = 1
+      }
+
+      exit failed
+    }
+  ' "file_path=${rel_path}" "${file}"; then
+    FAILED=1
+  fi
+}
+
+while IFS= read -r -d '' abs_path; do
+  rel_path="${abs_path#${PROJECT_DIR}/}"
+  if should_check_file "${rel_path}"; then
+    validate_prd_file_required_sections "${abs_path}" "${rel_path}"
+  fi
+done < <(find "${TASKS_DIR}" -maxdepth 1 -type f -name 'prd-*.md' -print0)
+
 while IFS= read -r -d '' abs_path; do
   rel_path="${abs_path#${PROJECT_DIR}/}"
   if should_check_file "${rel_path}"; then
