@@ -35,16 +35,7 @@ cd ./my-app
 
 4. Create your first PRD and task list from templates in `tasks/templates/`.
 
-## Operating Modes
-
-Template maintenance (this repository):
-
-1. Validate contracts: `./scripts/validate-contracts.sh --project-dir .`
-2. Validate bootstrap behavior: `./scripts/smoke-test.sh`
-3. Run evals (hybrid): `./evals/run-evals.sh`
-4. Run evals (local-only): `./evals/run-evals.sh --trace-mode local-only`
-
-Generated project execution (new repo created by bootstrap):
+## Standard Routine
 
 1. Write PRD (`tasks/prd-<4digit>-<slug>.md`)
 2. Write atomic task list (`tasks/tasks-<4digit>-<slug>.md`)

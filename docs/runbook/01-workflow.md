@@ -7,11 +7,7 @@ contract -> atomic execution -> gate -> review -> merge -> eval.
 
 ## Operating Steps
 
-Template maintenance loop (this repository):
-
-1. Run `./scripts/validate-contracts.sh --project-dir .`.
-2. Run `./scripts/smoke-test.sh`.
-3. Run `./evals/run-evals.sh` (and optionally `--trace-mode local-only`).
+Template maintenance commands are documented in `README.md` Quickstart.
 
 Generated project loop (bootstrap output):
 

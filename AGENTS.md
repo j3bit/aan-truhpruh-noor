@@ -46,8 +46,7 @@ Template maintenance operations (run in this template repository):
 
 - Validate contracts only: `./scripts/validate-contracts.sh --project-dir .`
 - Validate bootstrap template: `./scripts/smoke-test.sh`
-- Run process evals (hybrid): `./evals/run-evals.sh`
-- Run process evals (local-only): `./evals/run-evals.sh --trace-mode local-only`
+- Run process evals: `./evals/run-evals.sh`
 
 ## Security Defaults
 

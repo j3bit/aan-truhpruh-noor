@@ -59,4 +59,5 @@ jobs:
         run: ./evals/run-evals.sh
 
       - name: Run evals (local-only)
+        if: ${{ github.event_name == 'push' }}
         run: ./evals/run-evals.sh --trace-mode local-only
