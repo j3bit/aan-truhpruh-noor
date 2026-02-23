@@ -63,6 +63,7 @@ Reference contract details from `references/tasks-contract.md`.
    - measurable acceptance criteria
    - executable test plan steps
    - done definition aligned with gate requirement
+   - metadata `Gate Stack` aligned to the execution target (`python|node|go`)
 7. Keep scope bounded to PRD:
    - move overflow items to notes or follow-up tasks
    - do not add unapproved feature expansion

@@ -45,6 +45,15 @@ cd ./my-app
 6. Diff-first review and merge in dependency order
 7. Run evals (`evals/run-evals.sh`)
 
+Local orchestration command:
+
+```bash
+./scripts/lead-orchestrate.sh \
+  --project-dir . \
+  --tasks-file tasks/tasks-<4digit>-<slug>.md \
+  --approve
+```
+
 ## Directory Guide
 
 - `AGENTS.md`: non-negotiable operating rules

@@ -61,6 +61,7 @@ REQUIRED_SKILL_FILES=(
 REQUIRED_TEMPLATE_FILES=(
   ".codex/config.toml"
   "docs/runbook/03-multi-agent.md"
+  "scripts/lead-orchestrate.sh"
 )
 
 if [[ ! -d "${TASKS_DIR}" ]]; then

@@ -4,6 +4,7 @@ multi_agent = true
 [orchestration]
 mode = "lead_orchestrated"
 ssot = ["codebase", "tasks/prd-*.md", "tasks/tasks-*.md"]
+command = "./scripts/lead-orchestrate.sh --project-dir . --tasks-file <tasks-file> --approve"
 replan_trigger = "failure_or_blocker"
 allow_replan_on_success = false
 merge_strategy = "dependency_order"

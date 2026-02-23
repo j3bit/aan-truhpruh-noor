@@ -23,6 +23,7 @@ run_bootstrap_check() {
   assert_file "${target}/.codex/config.toml"
   assert_file "${target}/tasks/process-rules.md"
   assert_file "${target}/scripts/check.sh"
+  assert_file "${target}/scripts/lead-orchestrate.sh"
   assert_file "${target}/scripts/validate-contracts.sh"
   assert_file "${target}/.github/workflows/check.yml"
   assert_file "${target}/evals/run-evals.sh"
@@ -35,7 +36,9 @@ run_bootstrap_check() {
   assert_file "${target}/evals/cases/05-trace-hybrid-fallback.case.sh"
   assert_file "${target}/evals/cases/06-metrics-thrash-unexpected.case.sh"
   assert_file "${target}/evals/cases/07-bootstrap-artifact-hygiene.case.sh"
+  assert_file "${target}/evals/cases/08-prd-required-sections.case.sh"
   assert_file "${target}/evals/cases/09-lead-orchestration-contract.case.sh"
+  assert_file "${target}/evals/cases/10-lead-orchestration-e2e.case.sh"
   assert_file "${target}/docs/runbook/03-multi-agent.md"
 
   if [[ "${stack}" == "python" ]]; then

@@ -37,6 +37,8 @@ The lead proposal output must include all fields below for each task:
 - `risk_level`
 - `ready`
 
+Stored at: `.orchestration/plan.jsonl` (or `--out-dir` override).
+
 Example:
 
 ```json
@@ -62,6 +64,8 @@ Coordinator and sub-agents must report status records with:
 - `pr_review_passed`
 - `blocked_reason`
 
+Stored at: `.orchestration/status.jsonl` (or `--out-dir` override).
+
 Example:
 
 ```json
@@ -84,6 +88,15 @@ Example:
 4. Task completion requires gate pass and review pass.
 5. PR granularity is one task per PR.
 6. Merge order follows dependency order only.
+
+## Local E2E Command
+
+```bash
+./scripts/lead-orchestrate.sh \
+  --project-dir . \
+  --tasks-file tasks/tasks-<4digit>-<slug>.md \
+  --approve
+```
 
 ## Replan Policy
 
