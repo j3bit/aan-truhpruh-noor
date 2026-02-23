@@ -1,22 +1,23 @@
-# Runbook 06: Skill Integration (Deferred)
+# Runbook 06: Skill Baseline
 
-This repository intentionally excludes concrete skill bundles.
+This repository includes five baseline skills as part of the default template contract.
+
+## Baseline Skill Set
+
+- `create-prd`
+- `generate-tasks`
+- `process-task`
+- `fix-failing-checks`
+- `pr-review`
 
 ## Integration Point
 
-- Place generated skills under `.agents/skills/`.
+- Baseline skills live under `.agents/skills/`.
 - Keep each skill self-contained (`SKILL.md`, optional scripts/assets/references).
-
-## Recommended Skill Set
-
-- create-prd
-- generate-tasks
-- process-task
-- fix-failing-checks
-- pr-review
+- Additional skills are optional extensions and must not weaken contract or gate behavior.
 
 ## Validation Checklist
 
-1. Skill output paths match repository contracts (`tasks/`, `scripts/check.sh`).
-2. Skill instructions do not bypass gate rules.
-3. Skill behavior is covered by eval cases where possible.
+1. Baseline skill files exist at `.agents/skills/<skill-name>/SKILL.md`.
+2. Skill output paths match repository contracts (`tasks/`, `scripts/check.sh`).
+3. Skill instructions do not bypass gate rules.
