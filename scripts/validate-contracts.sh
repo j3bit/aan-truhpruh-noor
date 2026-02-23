@@ -51,6 +51,13 @@ fi
 PROJECT_DIR="$(cd "${PROJECT_DIR}" && pwd)"
 TASKS_DIR="${PROJECT_DIR}/tasks"
 PROCESS_RULES_FILE="${TASKS_DIR}/process-rules.md"
+REQUIRED_SKILL_FILES=(
+  ".agents/skills/create-prd/SKILL.md"
+  ".agents/skills/generate-tasks/SKILL.md"
+  ".agents/skills/process-task/SKILL.md"
+  ".agents/skills/fix-failing-checks/SKILL.md"
+  ".agents/skills/pr-review/SKILL.md"
+)
 
 if [[ ! -d "${TASKS_DIR}" ]]; then
   echo "[contracts] INFO: no tasks/ directory in ${PROJECT_DIR}; skipping contract checks"
@@ -63,6 +70,13 @@ if [[ ! -f "${PROCESS_RULES_FILE}" ]]; then
 fi
 
 FAILED=0
+
+for rel_path in "${REQUIRED_SKILL_FILES[@]}"; do
+  if [[ ! -f "${PROJECT_DIR}/${rel_path}" ]]; then
+    echo "[contracts] FAIL: missing required skill file: ${rel_path}" >&2
+    FAILED=1
+  fi
+done
 
 CHANGED_FILES_FILE="$(mktemp)"
 cleanup() {

@@ -1,10 +1,19 @@
-# Skills Placeholder
+# Skills Baseline
 
-This template intentionally excludes concrete skill bundles.
+This template includes the baseline SOP skill set:
 
-When ready, generate and install skills with your preferred process (for example, `skill-creator`) and place them under `.agents/skills/`.
+- `create-prd`
+- `generate-tasks`
+- `process-task`
+- `fix-failing-checks`
+- `pr-review`
 
-Expected pattern:
+Required file pattern:
 
 - `.agents/skills/<skill-name>/SKILL.md`
-- Optional support files (scripts, assets, references) under each skill directory.
+
+Optional support files:
+
+- `references/`
+- `scripts/`
+- `assets/`

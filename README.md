@@ -54,8 +54,18 @@ cd ./my-app
 - `.github/workflows/`: CI and Codex review workflows
 - `evals/`: regression checks for process quality
 - `docs/runbook/`: operational guidance
-- `.agents/skills/`: reserved for future skill bundles
+- `.agents/skills/`: baseline SOP skills (`create-prd`, `generate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
 - `examples/`: stack starter samples
+
+## Core Skills Baseline
+
+This template ships with five baseline skills under `.agents/skills/`:
+
+- `create-prd`: idea -> `tasks/prd-*.md`
+- `generate-tasks`: PRD -> `tasks/tasks-*.md`
+- `process-task`: one task execution + gate verification
+- `fix-failing-checks`: recover failing gate with bounded fixes
+- `pr-review`: risk-first diff review
 
 ## check.sh Contract
 

@@ -62,7 +62,14 @@ Template maintenance operations (run in this template repository):
 3. Parallel work is allowed only for explicitly independent tasks.
 4. Merge order follows dependency order, never convenience order.
 
-## Skill Integration Policy
+## Core Skills Baseline
 
-Skill content is intentionally out of scope in this repository baseline.
-Use `docs/runbook/06-skill-integration.md` to integrate skill bundles later.
+This template includes these baseline SOP skills under `.agents/skills/`:
+
+1. `create-prd`
+2. `generate-tasks`
+3. `process-task`
+4. `fix-failing-checks`
+5. `pr-review`
+
+These five skills are part of the default template contract and must remain present unless replaced by an equivalent governed process.
