@@ -132,6 +132,7 @@ copy_item .github
 copy_item evals
 copy_item docs
 copy_item .agents
+copy_item .codex
 copy_item README.md
 copy_item examples
 

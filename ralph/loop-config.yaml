@@ -10,7 +10,7 @@ roles:
   tester_prompt: ralph/tester.prompt.md
 
 gates:
-  default_stack: python
+  stack_source: task_metadata
   command_template: ./scripts/check.sh --stack {{stack}}
 
 operating_rules:

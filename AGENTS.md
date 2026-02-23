@@ -62,6 +62,13 @@ Template maintenance operations (run in this template repository):
 3. Parallel work is allowed only for explicitly independent tasks.
 4. Merge order follows dependency order, never convenience order.
 
+## Multi-Agent Governance
+
+1. Lead agent is propose-only (`read/analyze/propose`) and must not edit repository files.
+2. Execution sub-agents process exactly one task id per run.
+3. Replan is allowed only when failure or blocker is detected.
+4. PR granularity is one task per PR.
+
 ## Core Skills Baseline
 
 This template includes these baseline SOP skills under `.agents/skills/`:

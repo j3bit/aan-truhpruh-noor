@@ -40,6 +40,8 @@ Local-only mode (no trace attempt):
 - unexpected file creation
 - gate bypass attempts
 - skill-triggered workflows when trace evidence indicates skill usage
+- lead orchestration contract drift (`.codex/config.toml`)
+- dependency-order violations in task execution flow
 
 ## Result Schema
 

@@ -58,6 +58,10 @@ REQUIRED_SKILL_FILES=(
   ".agents/skills/fix-failing-checks/SKILL.md"
   ".agents/skills/pr-review/SKILL.md"
 )
+REQUIRED_TEMPLATE_FILES=(
+  ".codex/config.toml"
+  "docs/runbook/03-multi-agent.md"
+)
 
 if [[ ! -d "${TASKS_DIR}" ]]; then
   echo "[contracts] INFO: no tasks/ directory in ${PROJECT_DIR}; skipping contract checks"
@@ -74,6 +78,13 @@ FAILED=0
 for rel_path in "${REQUIRED_SKILL_FILES[@]}"; do
   if [[ ! -f "${PROJECT_DIR}/${rel_path}" ]]; then
     echo "[contracts] FAIL: missing required skill file: ${rel_path}" >&2
+    FAILED=1
+  fi
+done
+
+for rel_path in "${REQUIRED_TEMPLATE_FILES[@]}"; do
+  if [[ ! -f "${PROJECT_DIR}/${rel_path}" ]]; then
+    echo "[contracts] FAIL: missing required template artifact: ${rel_path}" >&2
     FAILED=1
   fi
 done
