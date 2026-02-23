@@ -6,6 +6,7 @@ Inputs:
 - `tasks/process-rules.md`
 - Active PRD and task list
 - Current task id
+- Lead DAG proposal and dependency status
 
 Output requirements:
 1. Restate scope in one paragraph.

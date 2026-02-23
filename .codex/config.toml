@@ -1,0 +1,56 @@
+[features]
+multi_agent = true
+
+[orchestration]
+mode = "lead_orchestrated"
+ssot = ["codebase", "tasks/prd-*.md", "tasks/tasks-*.md"]
+replan_trigger = "failure_or_blocker"
+allow_replan_on_success = false
+merge_strategy = "dependency_order"
+pr_granularity = "one_task_one_pr"
+
+[orchestration.plan_contract]
+required_fields = [
+  "task_id",
+  "dependencies",
+  "parallel_safe",
+  "gate_stack",
+  "risk_level",
+  "ready",
+]
+
+[orchestration.status_contract]
+required_fields = [
+  "task_id",
+  "agent_id",
+  "status",
+  "attempt",
+  "gate_passed",
+  "pr_review_passed",
+  "blocked_reason",
+]
+
+[gate]
+command = "./scripts/check.sh --stack {{stack}}"
+stack_source = "tasks_metadata.gate_stack"
+
+[agents.lead]
+role = "development_lead"
+permissions = "read_only"
+can_propose = true
+can_modify_files = false
+deterministic_order = "task_id"
+
+[agents.sub_agent]
+role = "task_executor"
+task_scope = "single_task"
+skills = ["process-task", "fix-failing-checks", "pr-review"]
+fix_retry_limit = 3
+rework_on_review_priorities = ["P1", "P2"]
+rework_max_rounds = 1
+
+[agents.sub_agent.ralph]
+enabled = true
+completion_signal = "LOOP_COMPLETE"
+max_iterations = 8
+max_runtime_minutes = 30

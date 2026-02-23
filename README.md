@@ -6,7 +6,7 @@ This repository is a stack-neutral bootstrap template for running AI coding work
 
 - Contract layer: PRD + atomic task templates + process rules
 - Procedure layer: `AGENTS.md` operating policy
-- Execution layer: single gate entrypoint with stack adapters
+- Execution layer: lead-orchestrated Codex multi-agent workflow + stack adapters
 - Quality layer: CI gates + eval runner + runbooks
 - Bootstrap UX: script to generate a new repository with chosen starter stack
 
@@ -39,10 +39,11 @@ cd ./my-app
 
 1. Write PRD (`tasks/prd-<4digit>-<slug>.md`)
 2. Write atomic task list (`tasks/tasks-<4digit>-<slug>.md`)
-3. Execute one task at a time
-4. Pass gate (`scripts/check.sh`) (includes contract validation)
-5. Diff-first review and merge
-6. Run evals (`evals/run-evals.sh`)
+3. Lead agent proposes dependency DAG from code + PRD + tasks
+4. Execute one task per sub-agent
+5. Pass gate (`scripts/check.sh`) (includes contract validation)
+6. Diff-first review and merge in dependency order
+7. Run evals (`evals/run-evals.sh`)
 
 ## Directory Guide
 
@@ -54,6 +55,7 @@ cd ./my-app
 - `.github/workflows/`: CI and Codex review workflows
 - `evals/`: regression checks for process quality
 - `docs/runbook/`: operational guidance
+- `.codex/config.toml`: multi-agent orchestration defaults
 - `.agents/skills/`: baseline SOP skills (`create-prd`, `generate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
 - `examples/`: stack starter samples
 
