@@ -30,6 +30,7 @@ Collect or infer these inputs before writing:
 5. Optional user constraints (timebox, exclusions, risk limits).
 
 If task file path is not explicitly provided, inspect `tasks/tasks-*.md` and resolve the file that contains the target task id.
+If gate stack is not explicitly provided, read `Gate Stack` from task file metadata.
 
 ## Output Contract
 

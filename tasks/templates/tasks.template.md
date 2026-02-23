@@ -3,6 +3,7 @@
 ## Metadata
 - File name: `tasks/tasks-<4digit>-<slug>.md`
 - PRD: `tasks/prd-<4digit>-<slug>.md`
+- Gate Stack: `<python|node|go>`
 - Owner:
 - Last Updated:
 
