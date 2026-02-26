@@ -109,7 +109,7 @@ Example:
 
 1. Lead agent permissions are read-only.
 2. Changes to `tasks`/`prd`/code are made by execution sub-agents only.
-3. CI review jobs remain read-only.
+3. Automated PR review jobs remain read-only.
 4. Privilege escalation remains approval-gated.
 
 ## Validation Scenarios

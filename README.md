@@ -54,6 +54,10 @@ Local orchestration command:
   --approve
 ```
 
+## PR Automated Review
+
+PR automated review is handled by Codex Web GitHub integration (not GitHub Actions in this template).
+
 ## Directory Guide
 
 - `AGENTS.md`: non-negotiable operating rules
@@ -61,7 +65,7 @@ Local orchestration command:
 - `scripts/`: gate/bootstrap/smoke scripts
 - `templates/stacks/`: stack-specific gate adapters
 - `ralph/`: loop config and role prompts
-- `.github/workflows/`: CI and Codex review workflows
+- `.github/workflows/`: CI workflows
 - `evals/`: regression checks for process quality
 - `docs/runbook/`: operational guidance
 - `.codex/config.toml`: multi-agent orchestration defaults
