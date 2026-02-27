@@ -38,6 +38,7 @@ DAG_TASK_IDS=()
 DAG_DEPSS=()
 DAG_PARALLELS=()
 DAG_STAGES=()
+UNIQUE_DAG_TASK_IDS=()
 
 WAVE_TASKS=()
 
@@ -336,15 +337,15 @@ load_dag() {
   fi
 }
 
-validate_dag_unique_task_ids() {
-  local i j
-  for ((i=0; i<${#DAG_TASK_IDS[@]}; i++)); do
-    for ((j=i+1; j<${#DAG_TASK_IDS[@]}; j++)); do
-      if [[ "${DAG_TASK_IDS[$i]}" == "${DAG_TASK_IDS[$j]}" ]]; then
-        error "Duplicate DAG task id detected: ${DAG_TASK_IDS[$i]}"
-        return 1
-      fi
-    done
+build_unique_dag_task_ids() {
+  local task_id
+  UNIQUE_DAG_TASK_IDS=()
+  for task_id in "${DAG_TASK_IDS[@]}"; do
+    if array_contains "${task_id}" ${UNIQUE_DAG_TASK_IDS+"${UNIQUE_DAG_TASK_IDS[@]}"}; then
+      error "Duplicate DAG task id detected: ${task_id}"
+      return 1
+    fi
+    UNIQUE_DAG_TASK_IDS+=("${task_id}")
   done
   return 0
 }
@@ -398,25 +399,13 @@ validate_task_dag_alignment() {
 compute_waves() {
   local remaining=()
   local resolved=()
-  local seen_task_ids=()
-  local dag_task_ids_for_waves=()
   local task_id dag_idx deps dep
   local ready_wave=()
   local rem_idx
 
   WAVE_TASKS=()
 
-  for task_id in "${DAG_TASK_IDS[@]}"; do
-    # Defensive guard: even if upstream validation is skipped, never schedule duplicates.
-    if array_contains "${task_id}" ${seen_task_ids+"${seen_task_ids[@]}"}; then
-      error "Duplicate DAG task id detected during wave computation: ${task_id}"
-      return 1
-    fi
-    seen_task_ids+=("${task_id}")
-    dag_task_ids_for_waves+=("${task_id}")
-  done
-
-  for task_id in "${dag_task_ids_for_waves[@]}"; do
+  for task_id in "${UNIQUE_DAG_TASK_IDS[@]}"; do
     if ! is_done "${task_id}"; then
       remaining+=("${task_id}")
     fi
@@ -717,7 +706,7 @@ fi
 
 load_tasks
 load_dag
-if ! validate_dag_unique_task_ids; then
+if ! build_unique_dag_task_ids; then
   exit 2
 fi
 validate_task_dag_alignment
