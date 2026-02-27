@@ -122,6 +122,92 @@ fi
 perl -0pi -e 's#- Task DAG: `tasks/dag-1234-dag-contract-check-wrong\.json`#- Task DAG: `tasks/dag-1234-dag-contract-check.json`#' \
   "${TARGET}/tasks/tasks-1234-dag-contract-check.md"
 
+# Duplicate DAG task IDs should be rejected by both validator and orchestrator.
+cat > "${TARGET}/tasks/dag-1234-dag-contract-check.json" <<'EOF'
+{
+  "metadata": {
+    "id": "1234",
+    "slug": "dag-contract-check",
+    "prd": "tasks/prd-1234-dag-contract-check.md",
+    "trd": "tasks/trd-1234-dag-contract-check.md",
+    "tasks": "tasks/tasks-1234-dag-contract-check.md",
+    "gate_stack": "python"
+  },
+  "nodes": [
+    {
+      "task_id": "T-001",
+      "depends_on": [],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    },
+    {
+      "task_id": "T-002",
+      "depends_on": ["T-001"],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    },
+    {
+      "task_id": "T-002",
+      "depends_on": ["T-001"],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    }
+  ]
+}
+EOF
+
+set +e
+(cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null 2>&1)
+duplicate_validator_status=$?
+set -e
+
+if [[ "${duplicate_validator_status}" -eq 0 ]]; then
+  echo "[case-12] check passed despite duplicate DAG task ids" >&2
+  exit 1
+fi
+
+set +e
+bash "${TARGET}/scripts/lead-orchestrate.sh" \
+  --project-dir "${TARGET}" \
+  --tasks-file "${TARGET}/tasks/tasks-1234-dag-contract-check.md" \
+  --dag-file "${TARGET}/tasks/dag-1234-dag-contract-check.json" \
+  --plan-only >/dev/null 2>&1
+duplicate_orchestrator_status=$?
+set -e
+
+if [[ "${duplicate_orchestrator_status}" -eq 0 ]]; then
+  echo "[case-12] lead orchestrator accepted duplicate DAG task ids" >&2
+  exit 1
+fi
+
+# Intentionally mismatched DAG dependency for T-002.
+cat > "${TARGET}/tasks/dag-1234-dag-contract-check.json" <<'EOF'
+{
+  "metadata": {
+    "id": "1234",
+    "slug": "dag-contract-check",
+    "prd": "tasks/prd-1234-dag-contract-check.md",
+    "trd": "tasks/trd-1234-dag-contract-check.md",
+    "tasks": "tasks/tasks-1234-dag-contract-check.md",
+    "gate_stack": "python"
+  },
+  "nodes": [
+    {
+      "task_id": "T-001",
+      "depends_on": [],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    },
+    {
+      "task_id": "T-002",
+      "depends_on": [],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    }
+  ]
+}
+EOF
+
 set +e
 (cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null 2>&1)
 mismatch_status=$?

@@ -336,6 +336,19 @@ load_dag() {
   fi
 }
 
+validate_dag_unique_task_ids() {
+  local i j
+  for ((i=0; i<${#DAG_TASK_IDS[@]}; i++)); do
+    for ((j=i+1; j<${#DAG_TASK_IDS[@]}; j++)); do
+      if [[ "${DAG_TASK_IDS[$i]}" == "${DAG_TASK_IDS[$j]}" ]]; then
+        error "Duplicate DAG task id detected: ${DAG_TASK_IDS[$i]}"
+        return 1
+      fi
+    done
+  done
+  return 0
+}
+
 sorted_dep_string() {
   local dep_raw="$1"
   local dep
@@ -692,6 +705,9 @@ fi
 
 load_tasks
 load_dag
+if ! validate_dag_unique_task_ids; then
+  exit 2
+fi
 validate_task_dag_alignment
 
 if [[ -z "${STACK}" ]]; then

@@ -462,7 +462,7 @@ extract_task_dependencies() {
       deps = ""
       next
     }
-  ' "${tasks_file}" | sort -u > "${out_file}"
+  ' "${tasks_file}" | sort > "${out_file}"
 }
 
 extract_dag_dependencies() {
@@ -483,11 +483,13 @@ extract_dag_dependencies() {
       die "missing_metadata_key_$k" unless defined $obj->{metadata}{$k};
     }
     die "missing_nodes" unless ref($obj->{nodes}) eq "ARRAY";
+    my %seen_task_id = ();
     for my $node (@{$obj->{nodes}}) {
       die "invalid_node" unless ref($node) eq "HASH";
       die "missing_task_id" unless defined $node->{task_id};
       die "missing_depends_on" unless ref($node->{depends_on}) eq "ARRAY";
       die "missing_parallel_safe" unless exists $node->{parallel_safe};
+      die "duplicate_task_id_$node->{task_id}" if $seen_task_id{$node->{task_id}}++;
       my @deps = sort @{$node->{depends_on}};
       print $node->{task_id} . "|" . join(",", @deps) . "\n";
     }
@@ -497,7 +499,7 @@ extract_dag_dependencies() {
     return
   fi
 
-  sed '/^$/d' "${out_file}.raw" | sort -u > "${out_file}"
+  sed '/^$/d' "${out_file}.raw" | sort > "${out_file}"
   rm -f "${out_file}.raw"
 }
 

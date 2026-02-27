@@ -47,7 +47,7 @@ blackboard_emit_event() {
   local from_stage="$3"
   local to_stage="$4"
   local payload_json="${5:-}"
-  local compact_payload
+  local event_json
   local events_file
   local ts
   local status="accepted"
@@ -65,24 +65,46 @@ blackboard_emit_event() {
     payload_json='{}'
   fi
 
-  # Keep events.jsonl line-oriented by normalizing payload JSON to one compact line.
-  if ! compact_payload="$(printf '%s' "${payload_json}" | perl -MJSON::PP -e '
+  # Emit one JSON object per line by encoding the full event in Perl.
+  event_json="$(perl -MJSON::PP -e '
     use strict;
     use warnings;
-    local $/;
-    my $raw = <STDIN>;
-    my $obj = eval { decode_json($raw) };
+    my ($ts, $type, $from, $to, $status, $blocked_reason, $payload_raw) = @ARGV;
+    my $payload = eval { decode_json($payload_raw) };
     if ($@) {
-      exit 1;
+      $payload = {};
     }
-    print encode_json($obj);
-  ' 2>/dev/null)"; then
-    compact_payload='{}'
-  fi
-  payload_json="${compact_payload}"
+    my %event = (
+      ts => $ts,
+      type => $type,
+      from_stage => $from,
+      to_stage => $to,
+      status => $status,
+      blocked_reason => $blocked_reason,
+      payload => $payload,
+    );
+    print encode_json(\%event);
+  ' "${ts}" "${event_type}" "${from_stage}" "${to_stage}" "${status}" "${blocked_reason}" "${payload_json}" 2>/dev/null || true)"
 
-  printf '{"ts":"%s","type":"%s","from_stage":"%s","to_stage":"%s","status":"%s","blocked_reason":"%s","payload":%s}\n' \
-    "${ts}" "${event_type}" "${from_stage}" "${to_stage}" "${status}" "${blocked_reason}" "${payload_json}" >> "${events_file}"
+  if [[ -z "${event_json}" ]]; then
+    event_json="$(perl -MJSON::PP -e '
+      use strict;
+      use warnings;
+      my ($ts, $type, $from, $to, $status, $blocked_reason) = @ARGV;
+      my %event = (
+        ts => $ts,
+        type => $type,
+        from_stage => $from,
+        to_stage => $to,
+        status => $status,
+        blocked_reason => $blocked_reason,
+        payload => {},
+      );
+      print encode_json(\%event);
+    ' "${ts}" "${event_type}" "${from_stage}" "${to_stage}" "${status}" "${blocked_reason}" 2>/dev/null || true)"
+  fi
+
+  printf '%s\n' "${event_json}" >> "${events_file}"
 
   [[ "${status}" == "accepted" ]]
 }

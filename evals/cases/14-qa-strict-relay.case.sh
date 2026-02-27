@@ -112,15 +112,9 @@ if [[ "${orchestrate_status}" -eq 0 ]]; then
 fi
 
 events_file="${TARGET}/.blackboard/events/events.jsonl"
-grep -q '"type":"QA_FAILURE_REPORTED"' "${events_file}"
-grep -q '"type":"SELF_HEAL_REPLAN_REQUESTED"' "${events_file}"
-grep -q '"from_stage":"QA","to_stage":"IMPLEMENTATION"' "${events_file}"
-grep -q '"from_stage":"IMPLEMENTATION","to_stage":"ORCHESTRATION"' "${events_file}"
-
-if grep -q '"from_stage":"QA","to_stage":"ORCHESTRATION","status":"accepted"' "${events_file}"; then
-  echo "[case-14] direct QA->ORCHESTRATION route was accepted" >&2
-  exit 1
-fi
+jq -s -e 'any(.[]; .type == "QA_FAILURE_REPORTED" and .from_stage == "QA" and .to_stage == "IMPLEMENTATION")' "${events_file}" >/dev/null
+jq -s -e 'any(.[]; .type == "SELF_HEAL_REPLAN_REQUESTED" and .from_stage == "IMPLEMENTATION" and .to_stage == "ORCHESTRATION")' "${events_file}" >/dev/null
+jq -s -e 'any(.[]; .from_stage == "QA" and .to_stage == "ORCHESTRATION" and .status == "accepted") | not' "${events_file}" >/dev/null
 
 # Ensure JSONL framing remains one event per line even with pretty payload input.
 while IFS= read -r line; do
