@@ -53,7 +53,8 @@ TASKS_DIR="${PROJECT_DIR}/tasks"
 PROCESS_RULES_FILE="${TASKS_DIR}/process-rules.md"
 REQUIRED_SKILL_FILES=(
   ".agents/skills/create-prd/SKILL.md"
-  ".agents/skills/generate-tasks/SKILL.md"
+  ".agents/skills/plan-tasks/SKILL.md"
+  ".agents/skills/orchestrate-tasks/SKILL.md"
   ".agents/skills/process-task/SKILL.md"
   ".agents/skills/fix-failing-checks/SKILL.md"
   ".agents/skills/pr-review/SKILL.md"
@@ -62,6 +63,11 @@ REQUIRED_TEMPLATE_FILES=(
   ".codex/config.toml"
   "docs/runbook/03-multi-agent.md"
   "scripts/lead-orchestrate.sh"
+  "scripts/lib/blackboard.sh"
+  "scripts/lib/stage-router.sh"
+  "tasks/templates/trd.template.md"
+  "tasks/templates/dag.template.md"
+  "tasks/templates/dag.template.json"
 )
 
 if [[ ! -d "${TASKS_DIR}" ]]; then
@@ -135,19 +141,12 @@ check_filename_contract() {
   fi
 }
 
-while IFS= read -r -d '' abs_path; do
-  rel_path="${abs_path#${PROJECT_DIR}/}"
-  if should_check_file "${rel_path}"; then
-    check_filename_contract "${rel_path}" '^tasks/prd-[0-9]{4}-[a-z0-9][a-z0-9-]*\.md$'
-  fi
-done < <(find "${TASKS_DIR}" -maxdepth 1 -type f -name 'prd-*.md' -print0)
-
-while IFS= read -r -d '' abs_path; do
-  rel_path="${abs_path#${PROJECT_DIR}/}"
-  if should_check_file "${rel_path}"; then
-    check_filename_contract "${rel_path}" '^tasks/tasks-[0-9]{4}-[a-z0-9][a-z0-9-]*\.md$'
-  fi
-done < <(find "${TASKS_DIR}" -maxdepth 1 -type f -name 'tasks-*.md' -print0)
+normalize_deps() {
+  local deps="$1"
+  deps="${deps//\`/}"
+  deps="$(printf '%s' "${deps}" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' | sort -u | paste -sd ',' -)"
+  printf '%s' "${deps}"
+}
 
 validate_task_file_block_contract() {
   local file="$1"
@@ -214,6 +213,39 @@ validate_task_file_block_contract() {
 
     END {
       flush_task()
+      exit failed
+    }
+  ' "file_path=${rel_path}" "${file}"; then
+    FAILED=1
+  fi
+}
+
+validate_tasks_metadata_contract() {
+  local file="$1"
+  local rel_path="$2"
+
+  if ! awk '
+    BEGIN {
+      has_trd = 0
+      has_dag = 0
+      failed = 0
+    }
+
+    /^- TRD:/ { has_trd = 1 }
+    /^- Task DAG:/ { has_dag = 1 }
+
+    END {
+      missing = ""
+      if (!has_trd) {
+        missing = missing " TRD"
+      }
+      if (!has_dag) {
+        missing = missing " Task DAG"
+      }
+      if (missing != "") {
+        printf("[contracts] FAIL: %s missing metadata:%s\n", file_path, missing) > "/dev/stderr"
+        failed = 1
+      }
       exit failed
     }
   ' "file_path=${rel_path}" "${file}"; then
@@ -300,6 +332,214 @@ validate_prd_file_required_sections() {
   fi
 }
 
+validate_trd_file_required_sections() {
+  local file="$1"
+  local rel_path="$2"
+
+  if ! awk '
+    BEGIN {
+      has_context = 0
+      has_arch_goals = 0
+      has_clean_arch = 0
+      has_components = 0
+      has_interfaces = 0
+      has_dependency_graph = 0
+      has_test_arch = 0
+      has_rollout = 0
+      failed = 0
+    }
+
+    /^##[[:space:]]/ {
+      heading = tolower($0)
+      if (index(heading, "context") > 0) has_context = 1
+      if (index(heading, "architecture goals") > 0) has_arch_goals = 1
+      if (index(heading, "clean architecture") > 0) has_clean_arch = 1
+      if (index(heading, "component catalog") > 0) has_components = 1
+      if (index(heading, "interface contracts") > 0) has_interfaces = 1
+      if (index(heading, "dependency graph") > 0) has_dependency_graph = 1
+      if (index(heading, "test architecture") > 0) has_test_arch = 1
+      if (index(heading, "rollout") > 0) has_rollout = 1
+    }
+
+    END {
+      missing = ""
+      if (!has_context) missing = missing " Context"
+      if (!has_arch_goals) missing = missing " Architecture Goals"
+      if (!has_clean_arch) missing = missing " Clean Architecture"
+      if (!has_components) missing = missing " Component Catalog"
+      if (!has_interfaces) missing = missing " Interface Contracts"
+      if (!has_dependency_graph) missing = missing " Dependency Graph"
+      if (!has_test_arch) missing = missing " Test Architecture"
+      if (!has_rollout) missing = missing " Rollout"
+
+      if (missing != "") {
+        printf("[contracts] FAIL: %s missing TRD sections:%s\n", file_path, missing) > "/dev/stderr"
+        failed = 1
+      }
+
+      exit failed
+    }
+  ' "file_path=${rel_path}" "${file}"; then
+    FAILED=1
+  fi
+}
+
+validate_dag_md_sections() {
+  local file="$1"
+  local rel_path="$2"
+
+  if ! awk '
+    BEGIN {
+      has_metadata = 0
+      has_nodes = 0
+      has_waves = 0
+      failed = 0
+    }
+
+    /^##[[:space:]]+Metadata/ { has_metadata = 1 }
+    /^##[[:space:]]+Nodes/ { has_nodes = 1 }
+    /^##[[:space:]]+Waves/ { has_waves = 1 }
+
+    END {
+      missing = ""
+      if (!has_metadata) missing = missing " Metadata"
+      if (!has_nodes) missing = missing " Nodes"
+      if (!has_waves) missing = missing " Waves"
+      if (missing != "") {
+        printf("[contracts] FAIL: %s missing DAG sections:%s\n", file_path, missing) > "/dev/stderr"
+        failed = 1
+      }
+      exit failed
+    }
+  ' "file_path=${rel_path}" "${file}"; then
+    FAILED=1
+  fi
+}
+
+extract_task_dependencies() {
+  local tasks_file="$1"
+  local out_file="$2"
+
+  awk '
+    function trim(v) {
+      gsub(/`/, "", v)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      return v
+    }
+    /^### T-[0-9]+:/ {
+      task_id = $2
+      sub(/:/, "", task_id)
+      deps = ""
+      next
+    }
+    task_id != "" && /^- Dependencies:/ {
+      line = $0
+      sub(/^- Dependencies:[[:space:]]*/, "", line)
+      line = trim(line)
+      if (tolower(line) == "none" || line == "") {
+        deps = ""
+      } else {
+        gsub(/[[:space:]]+/, "", line)
+        deps = line
+      }
+      print task_id "|" deps
+      task_id = ""
+      deps = ""
+      next
+    }
+  ' "${tasks_file}" | sort -u > "${out_file}"
+}
+
+extract_dag_dependencies() {
+  local dag_file="$1"
+  local out_file="$2"
+
+  if ! perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    my ($path) = @ARGV;
+    local $/;
+    open my $fh, "<", $path or die "open_failed";
+    my $json = <$fh>;
+    close $fh;
+    my $obj = decode_json($json);
+    die "missing_metadata" unless ref($obj->{metadata}) eq "HASH";
+    for my $k (qw(id slug prd trd tasks gate_stack)) {
+      die "missing_metadata_key_$k" unless defined $obj->{metadata}{$k};
+    }
+    die "missing_nodes" unless ref($obj->{nodes}) eq "ARRAY";
+    for my $node (@{$obj->{nodes}}) {
+      die "invalid_node" unless ref($node) eq "HASH";
+      die "missing_task_id" unless defined $node->{task_id};
+      die "missing_depends_on" unless ref($node->{depends_on}) eq "ARRAY";
+      die "missing_parallel_safe" unless exists $node->{parallel_safe};
+      my @deps = sort @{$node->{depends_on}};
+      print $node->{task_id} . "|" . join(",", @deps) . "\n";
+    }
+  ' "${dag_file}" > "${out_file}.raw" 2>/dev/null; then
+    echo "[contracts] FAIL: invalid DAG json schema: ${dag_file}" >&2
+    FAILED=1
+    return
+  fi
+
+  sed '/^$/d' "${out_file}.raw" | sort -u > "${out_file}"
+  rm -f "${out_file}.raw"
+}
+
+validate_task_dag_consistency() {
+  local tasks_file="$1"
+  local rel_tasks="$2"
+  local base_name id slug expected_dag rel_expected_dag
+  local task_deps_file dag_deps_file
+
+  base_name="$(basename "${tasks_file}")"
+  id="${base_name#tasks-}"
+  id="${id%%-*}"
+  slug="${base_name#tasks-${id}-}"
+  slug="${slug%.md}"
+
+  expected_dag="${TASKS_DIR}/dag-${id}-${slug}.json"
+  rel_expected_dag="tasks/dag-${id}-${slug}.json"
+
+  if [[ ! -f "${expected_dag}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} missing paired DAG json: ${rel_expected_dag}" >&2
+    FAILED=1
+    return
+  fi
+
+  task_deps_file="$(mktemp)"
+  dag_deps_file="$(mktemp)"
+
+  extract_task_dependencies "${tasks_file}" "${task_deps_file}"
+  extract_dag_dependencies "${expected_dag}" "${dag_deps_file}"
+
+  if [[ -f "${dag_deps_file}" ]]; then
+    if ! diff -u "${task_deps_file}" "${dag_deps_file}" >/dev/null 2>&1; then
+      echo "[contracts] FAIL: dependency mismatch between ${rel_tasks} and ${rel_expected_dag}" >&2
+      FAILED=1
+    fi
+  fi
+
+  rm -f "${task_deps_file}" "${dag_deps_file}"
+}
+
+for pattern in \
+  'prd-*.md:^tasks/prd-[0-9]{4}-[a-z0-9][a-z0-9-]*\.md$' \
+  'tasks-*.md:^tasks/tasks-[0-9]{4}-[a-z0-9][a-z0-9-]*\.md$' \
+  'trd-*.md:^tasks/trd-[0-9]{4}-[a-z0-9][a-z0-9-]*\.md$' \
+  'dag-*.md:^tasks/dag-[0-9]{4}-[a-z0-9][a-z0-9-]*\.md$' \
+  'dag-*.json:^tasks/dag-[0-9]{4}-[a-z0-9][a-z0-9-]*\.json$'
+ do
+  glob="${pattern%%:*}"
+  regex="${pattern#*:}"
+  while IFS= read -r -d '' abs_path; do
+    rel_path="${abs_path#${PROJECT_DIR}/}"
+    if should_check_file "${rel_path}"; then
+      check_filename_contract "${rel_path}" "${regex}"
+    fi
+  done < <(find "${TASKS_DIR}" -maxdepth 1 -type f -name "${glob}" -print0)
+done
+
 while IFS= read -r -d '' abs_path; do
   rel_path="${abs_path#${PROJECT_DIR}/}"
   if should_check_file "${rel_path}"; then
@@ -310,7 +550,23 @@ done < <(find "${TASKS_DIR}" -maxdepth 1 -type f -name 'prd-*.md' -print0)
 while IFS= read -r -d '' abs_path; do
   rel_path="${abs_path#${PROJECT_DIR}/}"
   if should_check_file "${rel_path}"; then
+    validate_trd_file_required_sections "${abs_path}" "${rel_path}"
+  fi
+done < <(find "${TASKS_DIR}" -maxdepth 1 -type f -name 'trd-*.md' -print0)
+
+while IFS= read -r -d '' abs_path; do
+  rel_path="${abs_path#${PROJECT_DIR}/}"
+  if should_check_file "${rel_path}"; then
+    validate_dag_md_sections "${abs_path}" "${rel_path}"
+  fi
+done < <(find "${TASKS_DIR}" -maxdepth 1 -type f -name 'dag-*.md' -print0)
+
+while IFS= read -r -d '' abs_path; do
+  rel_path="${abs_path#${PROJECT_DIR}/}"
+  if should_check_file "${rel_path}"; then
     validate_task_file_block_contract "${abs_path}" "${rel_path}"
+    validate_tasks_metadata_contract "${abs_path}" "${rel_path}"
+    validate_task_dag_consistency "${abs_path}" "${rel_path}"
   fi
 done < <(find "${TASKS_DIR}" -maxdepth 1 -type f -name 'tasks-*.md' -print0)
 
@@ -319,5 +575,4 @@ if [[ "${FAILED}" -eq 0 ]]; then
   exit 0
 fi
 
-echo "[contracts] FAIL"
 exit 1

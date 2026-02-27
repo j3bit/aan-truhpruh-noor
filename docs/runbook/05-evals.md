@@ -42,6 +42,10 @@ Local-only mode (no trace attempt):
 - skill-triggered workflows when trace evidence indicates skill usage
 - lead orchestration contract drift (`.codex/config.toml`)
 - dependency-order violations in task execution flow
+- stage-adjacency routing violations
+- DAG/task dependency mismatch
+- missing integration artifacts per wave/task
+- strict relay violations (`QA -> ORCHESTRATION` direct route)
 
 ## Result Schema
 

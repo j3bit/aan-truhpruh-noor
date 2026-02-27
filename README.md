@@ -4,7 +4,7 @@ This repository is a stack-neutral bootstrap template for running AI coding work
 
 ## What This Template Provides
 
-- Contract layer: PRD + atomic task templates + process rules
+- Contract layer: PRD + TRD + atomic task/DAG templates + process rules
 - Procedure layer: `AGENTS.md` operating policy
 - Execution layer: lead-orchestrated Codex multi-agent workflow + stack adapters
 - Quality layer: CI gates + eval runner + runbooks
@@ -33,17 +33,18 @@ cd ./my-app
 ./scripts/check.sh --stack python
 ```
 
-4. Create your first PRD and task list from templates in `tasks/templates/`.
+4. Create your first PRD/TRD/task/DAG artifacts from templates in `tasks/templates/`.
 
 ## Standard Routine
 
 1. Write PRD (`tasks/prd-<4digit>-<slug>.md`)
-2. Write atomic task list (`tasks/tasks-<4digit>-<slug>.md`)
-3. Lead agent proposes dependency DAG from code + PRD + tasks
-4. Execute one task per sub-agent
-5. Pass gate (`scripts/check.sh`) (includes contract validation)
-6. Diff-first review and merge in dependency order
-7. Run evals (`evals/run-evals.sh`)
+2. Write TRD (`tasks/trd-<4digit>-<slug>.md`)
+3. Plan tasks and DAG (`tasks/tasks-<4digit>-<slug>.md`, `tasks/dag-<4digit>-<slug>.json`)
+4. Lead orchestrates wave execution from DAG
+5. Sub-agents execute one task each (`process-task`, TDD-first)
+6. Pass gate (`scripts/check.sh`) (includes contract validation)
+7. Diff-first review and merge in dependency order
+8. Run evals (`evals/run-evals.sh`)
 
 Local orchestration command:
 
@@ -51,6 +52,7 @@ Local orchestration command:
 ./scripts/lead-orchestrate.sh \
   --project-dir . \
   --tasks-file tasks/tasks-<4digit>-<slug>.md \
+  --dag-file tasks/dag-<4digit>-<slug>.json \
   --approve
 ```
 
@@ -61,24 +63,27 @@ PR automated review is handled by Codex Web GitHub integration (not GitHub Actio
 ## Directory Guide
 
 - `AGENTS.md`: non-negotiable operating rules
-- `tasks/`: PRD/task contracts and templates
-- `scripts/`: gate/bootstrap/smoke scripts
+- `tasks/`: PRD/TRD/task/DAG contracts and templates
+- `scripts/`: gate/bootstrap/smoke/orchestration scripts
+- `scripts/lib/`: blackboard and stage-routing helpers
 - `templates/stacks/`: stack-specific gate adapters
 - `ralph/`: loop config and role prompts
 - `.github/workflows/`: CI workflows
 - `evals/`: regression checks for process quality
 - `docs/runbook/`: operational guidance
 - `.codex/config.toml`: multi-agent orchestration defaults
-- `.agents/skills/`: baseline SOP skills (`create-prd`, `generate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
+- `.agents/skills/`: baseline SOP skills (`create-prd`, `plan-tasks`, `orchestrate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
+- `.blackboard/`: runtime blackboard artifacts/events (generated at orchestration time)
 - `examples/`: stack starter samples
 
 ## Core Skills Baseline
 
-This template ships with five baseline skills under `.agents/skills/`:
+This template ships with six baseline skills under `.agents/skills/`:
 
 - `create-prd`: idea -> `tasks/prd-*.md`
-- `generate-tasks`: PRD -> `tasks/tasks-*.md`
-- `process-task`: one task execution + gate verification
+- `plan-tasks`: TRD -> `tasks/tasks-*.md` + `tasks/dag-*.{md,json}`
+- `orchestrate-tasks`: DAG/wave orchestration + blackboard integration artifacts
+- `process-task`: one task execution (TDD-first) + gate verification
 - `fix-failing-checks`: recover failing gate with bounded fixes
 - `pr-review`: risk-first diff review
 
@@ -95,8 +100,13 @@ Contract rules validated by the gate:
 - `tasks/process-rules.md` includes `Trace logging required`
 - Task files use `tasks/tasks-<4digit>-<slug>.md`
 - PRD files use `tasks/prd-<4digit>-<slug>.md`
+- TRD files use `tasks/trd-<4digit>-<slug>.md`
+- DAG files use `tasks/dag-<4digit>-<slug>.json` and `tasks/dag-<4digit>-<slug>.md`
 - PRD files include section headings for `Problem`, `Goals`, `Non-goals`, `Success Metrics`, `Constraints`, `Test Strategy`, and `Rollout`
+- TRD files include architecture sections (`Context`, `Clean Architecture`, `Component Catalog`, `Interface Contracts`, `Dependency Graph`)
+- Task metadata includes `TRD` and `Task DAG`
 - Every `### T-...` block includes `Dependencies`, `Acceptance Criteria`, `Test Plan`, and `Done Definition`
+- Task dependencies and DAG JSON dependencies must match exactly
 
 Exit codes:
 

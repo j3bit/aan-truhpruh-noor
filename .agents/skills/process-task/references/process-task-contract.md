@@ -9,6 +9,8 @@ Required input signals:
 1. Task id pattern: `T-[0-9]+`
 2. Task file pattern: `tasks/tasks-<4digit>-<slug>.md`
 3. Paired PRD pattern: `tasks/prd-<4digit>-<slug>.md`
+4. Paired TRD pattern: `tasks/trd-<4digit>-<slug>.md`
+5. Paired DAG pattern: `tasks/dag-<4digit>-<slug>.json`
 
 If task file path is missing, resolve by searching `tasks/tasks-*.md` for the exact task id heading.
 
@@ -23,6 +25,14 @@ Before implementation, confirm target task block includes:
 
 If any required field is missing, treat as contract issue and fix task artifact before marking completion.
 
+## TDD Expectation
+
+For behavior changes, the task should include:
+
+1. Failing test introduction or update aligned to acceptance criteria.
+2. Minimal implementation to satisfy tests.
+3. Final gate pass evidence.
+
 ## Status And Evidence Expectations
 
 Expected status progression per processed task:
@@ -35,6 +45,7 @@ Record execution evidence in task notes:
 1. Commands executed
 2. Pass/fail outcomes
 3. Relevant output artifact paths (if any)
+4. Integration artifact references when conflict directives were consumed.
 
 ## Gate Commands
 

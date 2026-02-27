@@ -2,7 +2,7 @@
 
 These rules govern all implementation work in this repository.
 
-1. **Contract-first**: start from `PRD` and `TASKS` files; do not code from chat alone.
+1. **Contract-first**: start from `PRD`, `TRD`, `TASKS`, and `DAG` files; do not code from chat alone.
 2. **Atomic execution**: run one unblocked task at a time.
 3. **Bounded scope**: reject unplanned scope expansion; create a new task instead.
 4. **Gate-required completion**: task completion requires `scripts/check.sh` exit code `0`.
@@ -13,3 +13,6 @@ These rules govern all implementation work in this repository.
 9. **Security defaults**: least privilege, explicit approvals, no secret commits.
 10. **Trace logging required**: eval/automation runs must record trace evidence, or explicitly capture why fallback mode was used.
 11. **Regression discipline**: on failure, add or update eval/test coverage.
+12. **Blackboard state**: orchestration state and integration directives must be persisted under `.blackboard/`.
+13. **Stage adjacency**: actor communication is allowed only between adjacent stages in the canonical pipeline.
+14. **Strict self-heal relay**: QA feedback must flow `QA -> IMPLEMENTATION -> ORCHESTRATION`; direct QA to ORCHESTRATION is forbidden.

@@ -1,0 +1,18 @@
+{
+  "metadata": {
+    "id": "0001",
+    "slug": "feature-name",
+    "prd": "tasks/prd-0001-feature-name.md",
+    "trd": "tasks/trd-0001-feature-name.md",
+    "tasks": "tasks/tasks-0001-feature-name.md",
+    "gate_stack": "python"
+  },
+  "nodes": [
+    {
+      "task_id": "T-001",
+      "depends_on": [],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    }
+  ]
+}

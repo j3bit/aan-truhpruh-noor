@@ -10,9 +10,11 @@ All contributors (human and AI agents) must treat process artifacts as first-cla
 Use these files as the canonical source of state:
 
 1. `tasks/prd-*.md` for product contract.
-2. `tasks/tasks-*.md` for atomic execution slices.
-3. `tasks/process-rules.md` for non-negotiable operating rules.
-4. `scripts/check.sh` for quality gate decisions.
+2. `tasks/trd-*.md` for system architecture contract.
+3. `tasks/tasks-*.md` for atomic execution slices.
+4. `tasks/dag-*.json` for dependency graph contract.
+5. `tasks/process-rules.md` for non-negotiable operating rules.
+6. `scripts/check.sh` for quality gate decisions.
 
 If chat instructions conflict with these files, update files first and then execute.
 
@@ -82,9 +84,10 @@ Template maintenance operations (run in this template repository):
 This template includes these baseline SOP skills under `.agents/skills/`:
 
 1. `create-prd`
-2. `generate-tasks`
-3. `process-task`
-4. `fix-failing-checks`
-5. `pr-review`
+2. `plan-tasks`
+3. `orchestrate-tasks`
+4. `process-task`
+5. `fix-failing-checks`
+6. `pr-review`
 
-These five skills are part of the default template contract and must remain present unless replaced by an equivalent governed process.
+These six skills are part of the default template contract and must remain present unless replaced by an equivalent governed process.

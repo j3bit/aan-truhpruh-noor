@@ -6,8 +6,9 @@ Rules:
 1. Implement only the active task scope.
 2. Preserve contracts and avoid silent interface changes.
 3. Keep diffs small and readable.
-4. If checks fail, produce a minimal fix plan and iterate.
-5. Process exactly one task id for this loop.
+4. Follow TDD flow: failing test -> minimal implementation -> passing test.
+5. If checks fail, produce a minimal fix plan and iterate.
+6. Process exactly one task id for this loop.
 
 Completion condition:
 - Emit `LOOP_COMPLETE` only after:

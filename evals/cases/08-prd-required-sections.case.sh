@@ -11,6 +11,36 @@ bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --stack python \
   --dest "${TARGET}"
 
+cp "${TARGET}/tasks/templates/trd.template.md" "${TARGET}/tasks/trd-1234-prd-required-sections.md"
+cp "${TARGET}/tasks/templates/dag.template.md" "${TARGET}/tasks/dag-1234-prd-required-sections.md"
+
+cat > "${TARGET}/tasks/dag-1234-prd-required-sections.json" <<'EOF'
+{
+  "metadata": {
+    "id": "1234",
+    "slug": "prd-required-sections",
+    "prd": "tasks/prd-1234-prd-required-sections.md",
+    "trd": "tasks/trd-1234-prd-required-sections.md",
+    "tasks": "tasks/tasks-1234-prd-required-sections.md",
+    "gate_stack": "python"
+  },
+  "nodes": [
+    {
+      "task_id": "T-001",
+      "depends_on": [],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    },
+    {
+      "task_id": "T-002",
+      "depends_on": ["T-001"],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    }
+  ]
+}
+EOF
+
 cat > "${TARGET}/tasks/prd-1234-prd-required-sections.md" <<'EOF'
 # PRD-1234: prd-required-sections
 

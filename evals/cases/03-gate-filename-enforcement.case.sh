@@ -26,6 +26,35 @@ fi
 
 rm -f "${TARGET}/tasks/prd-12-invalid.md" "${TARGET}/tasks/tasks-12-invalid.md"
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-valid.md"
+cp "${TARGET}/tasks/templates/trd.template.md" "${TARGET}/tasks/trd-1234-valid.md"
 cp "${TARGET}/tasks/templates/tasks.template.md" "${TARGET}/tasks/tasks-1234-valid.md"
+cp "${TARGET}/tasks/templates/dag.template.md" "${TARGET}/tasks/dag-1234-valid.md"
+
+cat > "${TARGET}/tasks/dag-1234-valid.json" <<'EOF'
+{
+  "metadata": {
+    "id": "1234",
+    "slug": "valid",
+    "prd": "tasks/prd-1234-valid.md",
+    "trd": "tasks/trd-1234-valid.md",
+    "tasks": "tasks/tasks-1234-valid.md",
+    "gate_stack": "python"
+  },
+  "nodes": [
+    {
+      "task_id": "T-001",
+      "depends_on": [],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    },
+    {
+      "task_id": "T-002",
+      "depends_on": ["T-001"],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    }
+  ]
+}
+EOF
 
 (cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null)
