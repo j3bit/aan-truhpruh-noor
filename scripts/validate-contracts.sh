@@ -148,6 +148,21 @@ normalize_deps() {
   printf '%s' "${deps}"
 }
 
+extract_task_dag_metadata_path() {
+  local tasks_file="$1"
+
+  awk '
+    /^- Task DAG:/ {
+      line = $0
+      sub(/^- Task DAG:[[:space:]]*/, "", line)
+      gsub(/`/, "", line)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+      print line
+      exit
+    }
+  ' "${tasks_file}"
+}
+
 validate_task_file_block_contract() {
   local file="$1"
   local rel_path="$2"
@@ -489,7 +504,8 @@ extract_dag_dependencies() {
 validate_task_dag_consistency() {
   local tasks_file="$1"
   local rel_tasks="$2"
-  local base_name id slug expected_dag rel_expected_dag
+  local base_name id slug expected_dag_rel
+  local metadata_dag metadata_dag_abs metadata_dag_rel
   local task_deps_file dag_deps_file
 
   base_name="$(basename "${tasks_file}")"
@@ -498,11 +514,35 @@ validate_task_dag_consistency() {
   slug="${base_name#tasks-${id}-}"
   slug="${slug%.md}"
 
-  expected_dag="${TASKS_DIR}/dag-${id}-${slug}.json"
-  rel_expected_dag="tasks/dag-${id}-${slug}.json"
+  expected_dag_rel="tasks/dag-${id}-${slug}.json"
+  metadata_dag="$(extract_task_dag_metadata_path "${tasks_file}")"
 
-  if [[ ! -f "${expected_dag}" ]]; then
-    echo "[contracts] FAIL: ${rel_tasks} missing paired DAG json: ${rel_expected_dag}" >&2
+  if [[ -z "${metadata_dag}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} missing Task DAG metadata value" >&2
+    FAILED=1
+    return
+  fi
+
+  if [[ "${metadata_dag}" == /* ]]; then
+    metadata_dag_abs="${metadata_dag}"
+  else
+    metadata_dag_abs="${PROJECT_DIR}/${metadata_dag}"
+  fi
+
+  if [[ "${metadata_dag_abs}" == "${PROJECT_DIR}/"* ]]; then
+    metadata_dag_rel="${metadata_dag_abs#${PROJECT_DIR}/}"
+  else
+    metadata_dag_rel="${metadata_dag_abs}"
+  fi
+
+  if [[ "${metadata_dag_rel}" != "${expected_dag_rel}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} Task DAG metadata must be ${expected_dag_rel}, got ${metadata_dag_rel}" >&2
+    FAILED=1
+    return
+  fi
+
+  if [[ ! -f "${metadata_dag_abs}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} missing Task DAG json: ${metadata_dag_rel}" >&2
     FAILED=1
     return
   fi
@@ -511,11 +551,11 @@ validate_task_dag_consistency() {
   dag_deps_file="$(mktemp)"
 
   extract_task_dependencies "${tasks_file}" "${task_deps_file}"
-  extract_dag_dependencies "${expected_dag}" "${dag_deps_file}"
+  extract_dag_dependencies "${metadata_dag_abs}" "${dag_deps_file}"
 
   if [[ -f "${dag_deps_file}" ]]; then
     if ! diff -u "${task_deps_file}" "${dag_deps_file}" >/dev/null 2>&1; then
-      echo "[contracts] FAIL: dependency mismatch between ${rel_tasks} and ${rel_expected_dag}" >&2
+      echo "[contracts] FAIL: dependency mismatch between ${rel_tasks} and ${metadata_dag_rel}" >&2
       FAILED=1
     fi
   fi

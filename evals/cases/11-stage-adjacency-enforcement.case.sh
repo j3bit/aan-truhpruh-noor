@@ -31,3 +31,6 @@ fi
 events_file="${TARGET}/.blackboard/events/events.jsonl"
 grep -q '"status":"rejected"' "${events_file}"
 grep -q '"blocked_reason":"non_adjacent_stage_route"' "${events_file}"
+
+# Ensure emitted JSONL lines are valid JSON payload records.
+jq -e . "${events_file}" >/dev/null

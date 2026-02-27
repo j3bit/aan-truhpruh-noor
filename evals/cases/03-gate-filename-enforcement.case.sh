@@ -27,8 +27,52 @@ fi
 rm -f "${TARGET}/tasks/prd-12-invalid.md" "${TARGET}/tasks/tasks-12-invalid.md"
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-valid.md"
 cp "${TARGET}/tasks/templates/trd.template.md" "${TARGET}/tasks/trd-1234-valid.md"
-cp "${TARGET}/tasks/templates/tasks.template.md" "${TARGET}/tasks/tasks-1234-valid.md"
 cp "${TARGET}/tasks/templates/dag.template.md" "${TARGET}/tasks/dag-1234-valid.md"
+
+cat > "${TARGET}/tasks/tasks-1234-valid.md" <<'EOF'
+# TASKS-1234: valid
+
+## Metadata
+- File name: `tasks/tasks-1234-valid.md`
+- PRD: `tasks/prd-1234-valid.md`
+- TRD: `tasks/trd-1234-valid.md`
+- Task DAG: `tasks/dag-1234-valid.json`
+- Gate Stack: `python`
+- Owner: `eval`
+- Last Updated: `2026-02-27`
+
+## Task List
+
+### T-001: base
+- Status: `todo`
+- Dependencies: `none`
+- Parallel-safe: `no`
+- Description:
+  -
+- Acceptance Criteria:
+  1.
+- Test Plan:
+  1.
+- Done Definition:
+  1. Acceptance criteria are satisfied.
+  2. Test plan was executed and evidenced.
+  3. `./scripts/check.sh --stack python` exits with code `0`.
+
+### T-002: dependent
+- Status: `todo`
+- Dependencies: `T-001`
+- Parallel-safe: `no`
+- Description:
+  -
+- Acceptance Criteria:
+  1.
+- Test Plan:
+  1.
+- Done Definition:
+  1. Acceptance criteria are satisfied.
+  2. Test plan was executed and evidenced.
+  3. `./scripts/check.sh --stack python` exits with code `0`.
+EOF
 
 cat > "${TARGET}/tasks/dag-1234-valid.json" <<'EOF'
 {

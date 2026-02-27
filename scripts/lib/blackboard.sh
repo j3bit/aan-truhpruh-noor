@@ -46,7 +46,7 @@ blackboard_emit_event() {
   local event_type="$2"
   local from_stage="$3"
   local to_stage="$4"
-  local payload_json="${5:-{}}"
+  local payload_json="${5:-}"
   local events_file
   local ts
   local status="accepted"

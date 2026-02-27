@@ -21,7 +21,7 @@ cat > "${TARGET}/tasks/tasks-1234-dag-contract-check.md" <<'EOF'
 - File name: `tasks/tasks-1234-dag-contract-check.md`
 - PRD: `tasks/prd-1234-dag-contract-check.md`
 - TRD: `tasks/trd-1234-dag-contract-check.md`
-- Task DAG: `tasks/dag-1234-dag-contract-check.json`
+- Task DAG: `tasks/dag-1234-dag-contract-check-wrong.json`
 - Gate Stack: `python`
 - Owner: `eval`
 - Last Updated: `2026-02-27`
@@ -108,6 +108,19 @@ cat > "${TARGET}/tasks/dag-1234-dag-contract-check.json" <<'EOF'
   ]
 }
 EOF
+
+set +e
+(cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null 2>&1)
+metadata_mismatch_status=$?
+set -e
+
+if [[ "${metadata_mismatch_status}" -eq 0 ]]; then
+  echo "[case-12] check passed despite invalid Task DAG metadata path" >&2
+  exit 1
+fi
+
+perl -0pi -e 's#- Task DAG: `tasks/dag-1234-dag-contract-check-wrong\.json`#- Task DAG: `tasks/dag-1234-dag-contract-check.json`#' \
+  "${TARGET}/tasks/tasks-1234-dag-contract-check.md"
 
 set +e
 (cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null 2>&1)
