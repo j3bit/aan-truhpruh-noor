@@ -51,9 +51,17 @@ Template maintenance operations (run in this template repository):
 ## Security Defaults
 
 1. Default to sandboxed execution and approval-on-request for privileged actions.
-2. Use read-only mode in CI review workflows where possible.
+2. Use read-only mode in automated PR review systems where possible.
 3. Never place secrets in repository files.
 4. Use least-privilege credentials and scoped tokens only.
+
+## Review Guidelines
+
+1. Review only files changed by the PR.
+2. Report only issues attributable to added or modified lines in the PR diff.
+3. Prioritize correctness bugs, behavioral regressions, security risks, and missing tests.
+4. Sort findings by severity and include reproducible `file` and `line` evidence.
+5. If no in-scope issues exist, reviewers may respond with `No in-scope findings.`
 
 ## Branch And Workspace Conventions
 
