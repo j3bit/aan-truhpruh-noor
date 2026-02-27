@@ -399,6 +399,7 @@ compute_waves() {
   local remaining=()
   local resolved=()
   local seen_task_ids=()
+  local dag_task_ids_for_waves=()
   local task_id dag_idx deps dep
   local ready_wave=()
   local rem_idx
@@ -412,7 +413,10 @@ compute_waves() {
       return 1
     fi
     seen_task_ids+=("${task_id}")
+    dag_task_ids_for_waves+=("${task_id}")
+  done
 
+  for task_id in "${dag_task_ids_for_waves[@]}"; do
     if ! is_done "${task_id}"; then
       remaining+=("${task_id}")
     fi
