@@ -47,6 +47,7 @@ blackboard_emit_event() {
   local from_stage="$3"
   local to_stage="$4"
   local payload_json="${5:-}"
+  local compact_payload
   local events_file
   local ts
   local status="accepted"
@@ -63,6 +64,22 @@ blackboard_emit_event() {
   if [[ -z "${payload_json}" ]]; then
     payload_json='{}'
   fi
+
+  # Keep events.jsonl line-oriented by normalizing payload JSON to one compact line.
+  if ! compact_payload="$(printf '%s' "${payload_json}" | perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    local $/;
+    my $raw = <STDIN>;
+    my $obj = eval { decode_json($raw) };
+    if ($@) {
+      exit 1;
+    }
+    print encode_json($obj);
+  ' 2>/dev/null)"; then
+    compact_payload='{}'
+  fi
+  payload_json="${compact_payload}"
 
   printf '{"ts":"%s","type":"%s","from_stage":"%s","to_stage":"%s","status":"%s","blocked_reason":"%s","payload":%s}\n' \
     "${ts}" "${event_type}" "${from_stage}" "${to_stage}" "${status}" "${blocked_reason}" "${payload_json}" >> "${events_file}"

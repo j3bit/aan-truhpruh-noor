@@ -96,12 +96,20 @@ cat > "${TARGET}/.blackboard/feedback/qa/failure-1.json" <<'EOF'
 }
 EOF
 
+set +e
 bash "${TARGET}/scripts/lead-orchestrate.sh" \
   --project-dir "${TARGET}" \
   --tasks-file "${TARGET}/tasks/tasks-1234-qa-relay.md" \
   --dag-file "${TARGET}/tasks/dag-1234-qa-relay.json" \
   --approve \
   --out-dir "${OUT_DIR}" >/dev/null
+orchestrate_status=$?
+set -e
+
+if [[ "${orchestrate_status}" -eq 0 ]]; then
+  echo "[case-14] orchestration unexpectedly reported success despite QA replan trigger" >&2
+  exit 1
+fi
 
 events_file="${TARGET}/.blackboard/events/events.jsonl"
 grep -q '"type":"QA_FAILURE_REPORTED"' "${events_file}"
@@ -114,4 +122,9 @@ if grep -q '"from_stage":"QA","to_stage":"ORCHESTRATION","status":"accepted"' "$
   exit 1
 fi
 
-jq -e '.replan_triggered == true and .qa_feedback_processed > 0' "${OUT_DIR}/summary.json" >/dev/null
+# Ensure JSONL framing remains one event per line even with pretty payload input.
+while IFS= read -r line; do
+  jq -e . >/dev/null <<<"${line}"
+done < "${events_file}"
+
+jq -e '.replan_triggered == true and .qa_feedback_processed > 0 and .loop_complete == false' "${OUT_DIR}/summary.json" >/dev/null

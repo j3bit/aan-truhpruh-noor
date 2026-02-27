@@ -857,7 +857,7 @@ if [[ -z "${failed_task}" ]]; then
   fi
 fi
 
-if [[ -z "${failed_task}" ]]; then
+if [[ -z "${failed_task}" ]] && [[ "${replan_triggered}" == "false" ]]; then
   loop_complete=true
 fi
 
