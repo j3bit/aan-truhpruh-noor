@@ -398,6 +398,7 @@ validate_task_dag_alignment() {
 compute_waves() {
   local remaining=()
   local resolved=()
+  local seen_task_ids=()
   local task_id dag_idx deps dep
   local ready_wave=()
   local rem_idx
@@ -405,6 +406,13 @@ compute_waves() {
   WAVE_TASKS=()
 
   for task_id in "${DAG_TASK_IDS[@]}"; do
+    # Defensive guard: even if upstream validation is skipped, never schedule duplicates.
+    if array_contains "${task_id}" ${seen_task_ids+"${seen_task_ids[@]}"}; then
+      error "Duplicate DAG task id detected during wave computation: ${task_id}"
+      return 1
+    fi
+    seen_task_ids+=("${task_id}")
+
     if ! is_done "${task_id}"; then
       remaining+=("${task_id}")
     fi
