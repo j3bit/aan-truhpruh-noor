@@ -20,6 +20,11 @@ Ralph loop is executed inside each sub-agent, not as a global coordinator loop.
 5. If review contains `P1` or `P2`, perform one bounded rework cycle.
 6. Emit `LOOP_COMPLETE` only after gate and review conditions are satisfied.
 
+Execution profile notes:
+
+- Sub-agents prefer `profiles.fast` when available.
+- If `profiles.fast` is unavailable, execution falls back to default profile and records fallback in orchestration status.
+
 ## Role Expectations
 
 - Planner: bound scope + verify commands.

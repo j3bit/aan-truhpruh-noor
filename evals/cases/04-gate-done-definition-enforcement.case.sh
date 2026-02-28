@@ -12,6 +12,29 @@ bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-done-definition.md"
+cp "${TARGET}/tasks/templates/trd.template.md" "${TARGET}/tasks/trd-1234-done-definition.md"
+cp "${TARGET}/tasks/templates/dag.template.md" "${TARGET}/tasks/dag-1234-done-definition.md"
+
+cat > "${TARGET}/tasks/dag-1234-done-definition.json" <<'EOF'
+{
+  "metadata": {
+    "id": "1234",
+    "slug": "done-definition",
+    "prd": "tasks/prd-1234-done-definition.md",
+    "trd": "tasks/trd-1234-done-definition.md",
+    "tasks": "tasks/tasks-1234-done-definition.md",
+    "gate_stack": "python"
+  },
+  "nodes": [
+    {
+      "task_id": "T-001",
+      "depends_on": [],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    }
+  ]
+}
+EOF
 
 cat > "${TARGET}/tasks/tasks-1234-done-definition.md" <<'EOF'
 # TASKS-1234: done-definition-check
@@ -19,6 +42,9 @@ cat > "${TARGET}/tasks/tasks-1234-done-definition.md" <<'EOF'
 ## Metadata
 - File name: `tasks/tasks-1234-done-definition.md`
 - PRD: `tasks/prd-1234-done-definition.md`
+- TRD: `tasks/trd-1234-done-definition.md`
+- Task DAG: `tasks/dag-1234-done-definition.json`
+- Gate Stack: `python`
 - Owner: example
 - Last Updated: 2026-02-22
 
@@ -27,6 +53,7 @@ cat > "${TARGET}/tasks/tasks-1234-done-definition.md" <<'EOF'
 ### T-001: missing done definition
 - Status: `todo`
 - Dependencies: `none`
+- Parallel-safe: `no`
 - Acceptance Criteria:
   1. Contract validator should detect missing done definition.
 - Test Plan:

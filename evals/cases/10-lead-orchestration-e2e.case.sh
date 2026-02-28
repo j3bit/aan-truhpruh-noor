@@ -20,6 +20,7 @@ bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-lead-e2e.md"
+cp "${TARGET}/tasks/templates/trd.template.md" "${TARGET}/tasks/trd-1234-lead-e2e.md"
 
 cat > "${TARGET}/tasks/tasks-1234-lead-e2e.md" <<'EOF'
 # TASKS-1234: lead-e2e
@@ -27,6 +28,8 @@ cat > "${TARGET}/tasks/tasks-1234-lead-e2e.md" <<'EOF'
 ## Metadata
 - File name: `tasks/tasks-1234-lead-e2e.md`
 - PRD: `tasks/prd-1234-lead-e2e.md`
+- TRD: `tasks/trd-1234-lead-e2e.md`
+- Task DAG: `tasks/dag-1234-lead-e2e.json`
 - Gate Stack: `python`
 - Owner: `lead-e2e`
 - Last Updated: `2026-02-23`
@@ -77,9 +80,59 @@ cat > "${TARGET}/tasks/tasks-1234-lead-e2e.md" <<'EOF'
   -
 EOF
 
+bash -c "cat > \"${TARGET}/tasks/dag-1234-lead-e2e.md\" <<'EOF'
+# DAG-1234: lead-e2e
+
+## Metadata
+- File name: \`tasks/dag-1234-lead-e2e.md\`
+- PRD: \`tasks/prd-1234-lead-e2e.md\`
+- TRD: \`tasks/trd-1234-lead-e2e.md\`
+- Tasks: \`tasks/tasks-1234-lead-e2e.md\`
+- Gate Stack: \`python\`
+- Last Updated: 2026-02-23
+
+## Nodes
+| Task ID | Depends On | Parallel-safe | Stage |
+|---|---|---|---|
+| T-001 | none | no | IMPLEMENTATION |
+| T-002 | T-001 | no | IMPLEMENTATION |
+
+## Waves (Topological Order)
+1. Wave 1: T-001
+2. Wave 2: T-002
+EOF"
+
+cat > "${TARGET}/tasks/dag-1234-lead-e2e.json" <<'EOF'
+{
+  "metadata": {
+    "id": "1234",
+    "slug": "lead-e2e",
+    "prd": "tasks/prd-1234-lead-e2e.md",
+    "trd": "tasks/trd-1234-lead-e2e.md",
+    "tasks": "tasks/tasks-1234-lead-e2e.md",
+    "gate_stack": "python"
+  },
+  "nodes": [
+    {
+      "task_id": "T-001",
+      "depends_on": [],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    },
+    {
+      "task_id": "T-002",
+      "depends_on": ["T-001"],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    }
+  ]
+}
+EOF
+
 bash "${TARGET}/scripts/lead-orchestrate.sh" \
   --project-dir "${TARGET}" \
   --tasks-file "${TARGET}/tasks/tasks-1234-lead-e2e.md" \
+  --dag-file "${TARGET}/tasks/dag-1234-lead-e2e.json" \
   --approve \
   --out-dir "${OUT_DIR}" > "${LOG_FILE}"
 
@@ -88,6 +141,11 @@ grep -q "LOOP_COMPLETE" "${LOG_FILE}"
 test -f "${OUT_DIR}/plan.jsonl"
 test -f "${OUT_DIR}/status.jsonl"
 test -f "${OUT_DIR}/summary.json"
+test -f "${TARGET}/.blackboard/events/events.jsonl"
+test -f "${TARGET}/.blackboard/integration/waves/wave-1.json"
+test -f "${TARGET}/.blackboard/integration/waves/wave-2.json"
+test -f "${TARGET}/.blackboard/jobs/T-001.json"
+test -f "${TARGET}/.blackboard/jobs/T-002.json"
 
 jq -e '
   has("task_id") and
@@ -95,7 +153,9 @@ jq -e '
   has("parallel_safe") and
   has("gate_stack") and
   has("risk_level") and
-  has("ready")
+  has("ready") and
+  has("stage") and
+  has("wave")
 ' "${OUT_DIR}/plan.jsonl" >/dev/null
 
 jq -e '
@@ -105,7 +165,11 @@ jq -e '
   has("attempt") and
   has("gate_passed") and
   has("pr_review_passed") and
-  has("blocked_reason")
+  has("blocked_reason") and
+  has("stage") and
+  has("wave") and
+  has("profile") and
+  has("profile_fallback")
 ' "${OUT_DIR}/status.jsonl" >/dev/null
 
 jq -s -e '
@@ -113,18 +177,20 @@ jq -s -e '
   all(.[]; .status == "done" and .gate_passed == true and .pr_review_passed == true)
 ' "${OUT_DIR}/status.jsonl" >/dev/null
 
-jq -e '.loop_complete == true and .replan_triggered == false and .failed_task == ""' "${OUT_DIR}/summary.json" >/dev/null
+jq -e '.loop_complete == true and .replan_triggered == false and .failed_task == "" and .qa_feedback_processed == 0' "${OUT_DIR}/summary.json" >/dev/null
 
 # Determinism check for lead planning.
 bash "${TARGET}/scripts/lead-orchestrate.sh" \
   --project-dir "${TARGET}" \
   --tasks-file "${TARGET}/tasks/tasks-1234-lead-e2e.md" \
+  --dag-file "${TARGET}/tasks/dag-1234-lead-e2e.json" \
   --plan-only \
   --out-dir "${PLAN_A}" >/dev/null
 
 bash "${TARGET}/scripts/lead-orchestrate.sh" \
   --project-dir "${TARGET}" \
   --tasks-file "${TARGET}/tasks/tasks-1234-lead-e2e.md" \
+  --dag-file "${TARGET}/tasks/dag-1234-lead-e2e.json" \
   --plan-only \
   --out-dir "${PLAN_B}" >/dev/null
 

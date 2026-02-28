@@ -3,7 +3,8 @@
 This template includes the baseline SOP skill set:
 
 - `create-prd`
-- `generate-tasks`
+- `plan-tasks`
+- `orchestrate-tasks`
 - `process-task`
 - `fix-failing-checks`
 - `pr-review`

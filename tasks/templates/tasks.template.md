@@ -3,6 +3,8 @@
 ## Metadata
 - File name: `tasks/tasks-<4digit>-<slug>.md`
 - PRD: `tasks/prd-<4digit>-<slug>.md`
+- TRD: `tasks/trd-<4digit>-<slug>.md`
+- Task DAG: `tasks/dag-<4digit>-<slug>.json`
 - Gate Stack: `<python|node|go>`
 - Owner:
 - Last Updated:
@@ -11,6 +13,7 @@
 - Execute one task at a time unless explicitly marked parallel-safe.
 - Every task must include acceptance criteria and test plan.
 - Do not close task before gate passes.
+- Dependencies must match `tasks/dag-<4digit>-<slug>.json`.
 
 ## Task List
 
