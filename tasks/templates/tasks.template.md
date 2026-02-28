@@ -5,6 +5,8 @@
 - PRD: `tasks/prd-<4digit>-<slug>.md`
 - TRD: `tasks/trd-<4digit>-<slug>.md`
 - Task DAG: `tasks/dag-<4digit>-<slug>.json`
+- Task DAG Markdown: `tasks/dag-<4digit>-<slug>.md`
+- Planning Artifact: `.blackboard/artifacts/task-planning/<4digit>-<slug>.json`
 - Gate Stack: `<python|node|go>`
 - Owner:
 - Last Updated:
@@ -14,6 +16,7 @@
 - Every task must include acceptance criteria and test plan.
 - Do not close task before gate passes.
 - Dependencies must match `tasks/dag-<4digit>-<slug>.json`.
+- `Task DAG` and `Task DAG Markdown` metadata must point to matching id/slug DAG files.
 
 ## Task List
 

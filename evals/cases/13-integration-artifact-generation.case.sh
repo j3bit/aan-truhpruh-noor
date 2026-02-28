@@ -23,6 +23,8 @@ cat > "${TARGET}/tasks/tasks-1234-integration-artifacts.md" <<'EOF'
 - PRD: `tasks/prd-1234-integration-artifacts.md`
 - TRD: `tasks/trd-1234-integration-artifacts.md`
 - Task DAG: `tasks/dag-1234-integration-artifacts.json`
+- Task DAG Markdown: `tasks/dag-1234-integration-artifacts.md`
+- Planning Artifact: `.blackboard/artifacts/task-planning/1234-integration-artifacts.json`
 - Gate Stack: `python`
 - Owner: `eval`
 - Last Updated: `2026-02-27`

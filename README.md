@@ -37,14 +37,16 @@ cd ./my-app
 
 ## Standard Routine
 
-1. Write PRD (`tasks/prd-<4digit>-<slug>.md`)
-2. Write TRD (`tasks/trd-<4digit>-<slug>.md`)
-3. Plan tasks and DAG (`tasks/tasks-<4digit>-<slug>.md`, `tasks/dag-<4digit>-<slug>.json`)
-4. Lead orchestrates wave execution from DAG
-5. Sub-agents execute one task each (`process-task`, TDD-first)
-6. Pass gate (`scripts/check.sh`) (includes contract validation)
-7. Diff-first review and merge in dependency order
-8. Run evals (`evals/run-evals.sh`)
+1. (Optional placeholder stage) Produce ideation artifact at `.blackboard/artifacts/ideation/<4digit>-<slug>.json`
+2. Write PRD (`tasks/prd-<4digit>-<slug>.md`)
+3. Write TRD (`tasks/trd-<4digit>-<slug>.md`)
+4. Plan tasks and DAG from TRD (`tasks/tasks-<4digit>-<slug>.md`, `tasks/dag-<4digit>-<slug>.json`, `tasks/dag-<4digit>-<slug>.md`)
+5. Record task planning artifact at `.blackboard/artifacts/task-planning/<4digit>-<slug>.json`
+6. Lead orchestrates wave execution from DAG
+7. Sub-agents execute one task each (`process-task`, TDD-first)
+8. Pass gate (`scripts/check.sh`) (includes contract validation)
+9. Diff-first review and merge in dependency order
+10. Run evals (`evals/run-evals.sh`)
 
 Local orchestration command:
 
@@ -64,6 +66,7 @@ PR automated review is handled by Codex Web GitHub integration (not GitHub Actio
 
 - `AGENTS.md`: non-negotiable operating rules
 - `tasks/`: PRD/TRD/task/DAG contracts and templates
+- `tasks/contracts/blackboard/`: JSON schemas for planning-stage blackboard artifacts
 - `scripts/`: gate/bootstrap/smoke/orchestration scripts
 - `scripts/lib/`: blackboard and stage-routing helpers
 - `templates/stacks/`: stack-specific gate adapters
@@ -73,6 +76,7 @@ PR automated review is handled by Codex Web GitHub integration (not GitHub Actio
 - `docs/runbook/`: operational guidance
 - `.codex/config.toml`: multi-agent orchestration defaults
 - `.agents/skills/`: baseline SOP skills (`create-prd`, `plan-tasks`, `orchestrate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
+- `.agents/skills/ideation-consultant`, `.agents/skills/trd-architect`: placeholder pipeline contracts for future skill-generated implementations
 - `.blackboard/`: runtime blackboard artifacts/events (generated at orchestration time)
 - `examples/`: stack starter samples
 
@@ -86,6 +90,11 @@ This template ships with six baseline skills under `.agents/skills/`:
 - `process-task`: one task execution (TDD-first) + gate verification
 - `fix-failing-checks`: recover failing gate with bounded fixes
 - `pr-review`: risk-first diff review
+
+Planning pipeline placeholder skills:
+
+- `ideation-consultant`: ideation artifact contract for upstream product storytelling output
+- `trd-architect`: TRD artifact contract for architecture-complete downstream planning input
 
 ## check.sh Contract
 
@@ -104,9 +113,12 @@ Contract rules validated by the gate:
 - DAG files use `tasks/dag-<4digit>-<slug>.json` and `tasks/dag-<4digit>-<slug>.md`
 - PRD files include section headings for `Problem`, `Goals`, `Non-goals`, `Success Metrics`, `Constraints`, `Test Strategy`, and `Rollout`
 - TRD files include architecture sections (`Context`, `Clean Architecture`, `Component Catalog`, `Interface Contracts`, `Dependency Graph`)
-- Task metadata includes `TRD` and `Task DAG`
+- Task metadata includes `TRD`, `Task DAG`, `Task DAG Markdown`, and `Planning Artifact`
 - Every `### T-...` block includes `Dependencies`, `Acceptance Criteria`, `Test Plan`, and `Done Definition`
 - Task dependencies and DAG JSON dependencies must match exactly
+- `Task DAG` and `Task DAG Markdown` metadata paths must match task file id/slug
+- Planning artifact metadata path must match `.blackboard/artifacts/task-planning/<4digit>-<slug>.json`
+- Blackboard schema files under `tasks/contracts/blackboard/` must exist and be valid JSON
 
 Exit codes:
 

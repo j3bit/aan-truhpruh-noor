@@ -30,6 +30,8 @@ cat > "${TARGET}/tasks/tasks-1234-lead-e2e.md" <<'EOF'
 - PRD: `tasks/prd-1234-lead-e2e.md`
 - TRD: `tasks/trd-1234-lead-e2e.md`
 - Task DAG: `tasks/dag-1234-lead-e2e.json`
+- Task DAG Markdown: `tasks/dag-1234-lead-e2e.md`
+- Planning Artifact: `.blackboard/artifacts/task-planning/1234-lead-e2e.json`
 - Gate Stack: `python`
 - Owner: `lead-e2e`
 - Last Updated: `2026-02-23`

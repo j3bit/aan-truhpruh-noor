@@ -9,6 +9,7 @@ Use this reference to keep generated task and DAG artifacts compatible with repo
 - Path pattern: `tasks/dag-<4digit>-<slug>.md`
 - Path pattern: `tasks/dag-<4digit>-<slug>.json`
 - Paired PRD pattern: `tasks/prd-<4digit>-<slug>.md`
+- Planning artifact path: `.blackboard/artifacts/task-planning/<4digit>-<slug>.json`
 - Valid examples:
   - `tasks/tasks-0001-auth-foundation.md`
   - `tasks/trd-0001-auth-foundation.md`
@@ -51,10 +52,13 @@ Full gate validation (stack required):
 
 ## Practical Authoring Notes
 
-1. Maintain one-task-at-a-time execution semantics via explicit dependencies.
-2. Ensure `tasks/tasks-*.md` `Dependencies` and DAG JSON `depends_on` are identical.
-3. Use DAG JSON as machine source of truth; keep DAG markdown human-readable mirror.
-4. Keep acceptance criteria measurable and implementation-agnostic.
-5. Keep test plans command-oriented and reproducible.
-6. Align Done Definition with gate requirement (`./scripts/check.sh` must pass).
-7. Keep scope bounded to TRD architecture decisions and PRD goals/non-goals.
+1. Use TRD as the primary decomposition input; do not drive task structure directly from PRD prose.
+2. Use PRD as a constraints/goals guardrail only (goals, non-goals, constraints).
+3. Maintain one-task-at-a-time execution semantics via explicit dependencies.
+4. Ensure `tasks/tasks-*.md` `Dependencies` and DAG JSON `depends_on` are identical.
+5. Use DAG JSON as machine source of truth; keep DAG markdown human-readable mirror.
+6. Keep acceptance criteria measurable and implementation-agnostic.
+7. Keep test plans command-oriented and reproducible.
+8. Align Done Definition with gate requirement (`./scripts/check.sh` must pass).
+9. Keep scope bounded to TRD architecture decisions and PRD goals/non-goals.
+10. Populate task metadata fields `Task DAG`, `Task DAG Markdown`, and `Planning Artifact` with id/slug-consistent paths.

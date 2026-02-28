@@ -56,6 +56,8 @@ cat > "${TARGET}/tasks/tasks-1234-prd-required-sections.md" <<'EOF'
 - PRD: `tasks/prd-1234-prd-required-sections.md`
 - TRD: `tasks/trd-1234-prd-required-sections.md`
 - Task DAG: `tasks/dag-1234-prd-required-sections.json`
+- Task DAG Markdown: `tasks/dag-1234-prd-required-sections.md`
+- Planning Artifact: `.blackboard/artifacts/task-planning/1234-prd-required-sections.json`
 - Gate Stack: `python`
 - Owner: `eval`
 - Last Updated: `2026-02-27`

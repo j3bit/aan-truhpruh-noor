@@ -9,6 +9,11 @@ This template includes the baseline SOP skill set:
 - `fix-failing-checks`
 - `pr-review`
 
+Pipeline placeholder skills for future integration:
+
+- `ideation-consultant`
+- `trd-architect`
+
 Required file pattern:
 
 - `.agents/skills/<skill-name>/SKILL.md`
