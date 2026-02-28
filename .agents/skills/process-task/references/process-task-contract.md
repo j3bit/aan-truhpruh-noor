@@ -13,8 +13,8 @@ Required input signals:
 5. Paired DAG pattern: `tasks/dag-<4digit>-<slug>.json`
 
 If task file path is missing, resolve by searching `tasks/tasks-*.md` for the exact task id heading.
-If task id resolution returns zero matches, set task status to `blocked`, record `task id not found`, and stop.
-If task id resolution returns multiple matches, set task status to `blocked`, record ambiguity with candidate task file paths, and stop.
+If task id resolution returns zero matches, do not mutate any task status; report `task id not found` as a request-level blocker and stop.
+If task id resolution returns multiple matches, do not mutate any task status; report ambiguity with candidate task file paths as a request-level blocker and stop.
 If paired artifact files (`PRD`, `TRD`, `DAG`) are missing, set task status to `blocked`, record missing paths, and stop.
 
 ## Task Block Requirements
@@ -41,7 +41,7 @@ For behavior changes, the task should include:
 Expected status progression per processed task:
 
 - `todo` -> `in_progress` -> `done`
-- Use `blocked` when deterministic task resolution fails (`0` or `>1` matches), when required paired artifacts are missing, when progress cannot continue because of external dependency, or when failures remain unresolved after retry limit.
+- Use `blocked` only after a unique target task is resolved, when required paired artifacts are missing, when progress cannot continue because of external dependency, or when failures remain unresolved after retry limit.
 
 Record execution evidence in task notes:
 

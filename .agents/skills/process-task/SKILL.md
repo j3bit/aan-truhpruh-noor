@@ -33,8 +33,8 @@ Collect or infer these inputs before writing:
 8. Optional user constraints (timebox, exclusions, risk limits).
 
 If task file path is not explicitly provided, inspect `tasks/tasks-*.md` and resolve the file that contains the target task id.
-If task id resolution returns zero matches, set status `blocked`, record `task id not found` in notes, and stop.
-If task id resolution returns multiple matches, set status `blocked`, record ambiguity and candidate task file paths in notes, and stop.
+If task id resolution returns zero matches, do not mutate any task status; report `task id not found` as a request-level blocker and stop.
+If task id resolution returns multiple matches, do not mutate any task status; report ambiguity and candidate task file paths as a request-level blocker and stop.
 If any paired artifact path (`PRD`, `TRD`, `DAG`) is missing, set status `blocked`, record missing file paths in notes, and stop.
 If gate stack is not explicitly provided, read `Gate Stack` from task file metadata.
 
@@ -58,8 +58,8 @@ Reference contract details from `references/process-task-contract.md`.
 ## Procedure
 
 1. Locate target task and enforce deterministic task resolution:
-   - if task id appears zero times, set `blocked`, record `task id not found`, and stop
-   - if task id appears more than once, set `blocked`, record ambiguity with candidate task file paths, and stop
+   - if task id appears zero times, do not change any task status; report `task id not found` as a request-level blocker and stop
+   - if task id appears more than once, do not change any task status; report ambiguity with candidate task file paths as a request-level blocker and stop
    - if paired `PRD`/`TRD`/`DAG` files are missing, set `blocked`, record missing paths, and stop
 2. Read context in order:
    - `tasks/process-rules.md`
@@ -116,7 +116,7 @@ After third failure, stop and report:
 - remaining blocker
 - recommended next action
 
-Set task status to `blocked` when deterministic task resolution fails (`0` or `>1` matches), when required paired artifacts are missing, for external blockers, or for unresolved failures after retry limit.
+Set task status to `blocked` only after a unique target task is resolved, when required paired artifacts are missing, for external blockers, or for unresolved failures after retry limit.
 
 ## Safety Rules
 
