@@ -33,6 +33,9 @@ Collect or infer these inputs before writing:
 8. Optional user constraints (timebox, exclusions, risk limits).
 
 If task file path is not explicitly provided, inspect `tasks/tasks-*.md` and resolve the file that contains the target task id.
+If task id resolution returns zero matches, set status `blocked`, record `task id not found` in notes, and stop.
+If task id resolution returns multiple matches, set status `blocked`, record ambiguity and candidate task file paths in notes, and stop.
+If any paired artifact path (`PRD`, `TRD`, `DAG`) is missing, set status `blocked`, record missing file paths in notes, and stop.
 If gate stack is not explicitly provided, read `Gate Stack` from task file metadata.
 
 ## Output Contract
@@ -54,7 +57,10 @@ Reference contract details from `references/process-task-contract.md`.
 
 ## Procedure
 
-1. Locate target task and confirm that the task id appears exactly once.
+1. Locate target task and enforce deterministic task resolution:
+   - if task id appears zero times, set `blocked`, record `task id not found`, and stop
+   - if task id appears more than once, set `blocked`, record ambiguity with candidate task file paths, and stop
+   - if paired `PRD`/`TRD`/`DAG` files are missing, set `blocked`, record missing paths, and stop
 2. Read context in order:
    - `tasks/process-rules.md`
    - paired PRD
@@ -74,9 +80,11 @@ Reference contract details from `references/process-task-contract.md`.
    - commands run
    - pass/fail outcomes
    - relevant artifact paths
+   - contract/interface documentation update evidence when interfaces changed, or explicit `none`
+   - follow-up/risk capture entries, or explicit `none`
 9. If gate passes, set status `done`; otherwise keep `in_progress` and enter bounded fix loop.
 10. Perform diff-first self-review against acceptance criteria before finalizing.
-11. If execution profile information is available, prefer `profiles.fast` and fall back to default profile when unavailable.
+11. If execution profile selection is required, read `${HOME}/.codex/config.toml`; use `fast` only when `[profiles.fast]` exists, otherwise use `default` and record fallback in task notes.
 
 ## Completion Conditions
 
@@ -89,6 +97,8 @@ Mark completion only when all conditions are true:
 5. `./scripts/check.sh --stack <python|node|go>` exits with code `0`.
 6. Task notes include check and test evidence.
 7. No unrelated task scope was modified.
+8. When interfaces/contracts change, required documentation updates are completed and evidenced in task notes.
+9. Task notes include follow-up/risk capture entries, or an explicit `none`.
 
 ## Failure And Retry Rules
 
