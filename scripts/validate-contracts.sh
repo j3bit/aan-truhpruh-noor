@@ -503,6 +503,36 @@ extract_dag_dependencies() {
   rm -f "${out_file}.raw"
 }
 
+validate_dependency_targets_exist() {
+  local deps_file="$1"
+  local rel_source="$2"
+  local ids_file
+  local has_missing=0
+  local task_id deps_raw dep
+
+  ids_file="$(mktemp)"
+  cut -d'|' -f1 "${deps_file}" | sed '/^$/d' | sort -u > "${ids_file}"
+
+  while IFS='|' read -r task_id deps_raw; do
+    [[ -z "${task_id}" ]] && continue
+    [[ -z "${deps_raw}" ]] && continue
+
+    while IFS= read -r dep; do
+      [[ -z "${dep}" ]] && continue
+      if ! grep -Fxq "${dep}" "${ids_file}"; then
+        echo "[contracts] FAIL: ${rel_source} references undefined dependency ${dep} from ${task_id}" >&2
+        has_missing=1
+      fi
+    done < <(printf '%s\n' "${deps_raw}" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d')
+  done < "${deps_file}"
+
+  rm -f "${ids_file}"
+
+  if [[ "${has_missing}" -eq 1 ]]; then
+    FAILED=1
+  fi
+}
+
 validate_task_dag_consistency() {
   local tasks_file="$1"
   local rel_tasks="$2"
@@ -560,6 +590,8 @@ validate_task_dag_consistency() {
       echo "[contracts] FAIL: dependency mismatch between ${rel_tasks} and ${metadata_dag_rel}" >&2
       FAILED=1
     fi
+    validate_dependency_targets_exist "${task_deps_file}" "${rel_tasks}"
+    validate_dependency_targets_exist "${dag_deps_file}" "${metadata_dag_rel}"
   fi
 
   rm -f "${task_deps_file}" "${dag_deps_file}"

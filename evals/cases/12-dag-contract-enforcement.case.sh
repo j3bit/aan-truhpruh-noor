@@ -122,6 +122,50 @@ fi
 perl -0pi -e 's#- Task DAG: `tasks/dag-1234-dag-contract-check-wrong\.json`#- Task DAG: `tasks/dag-1234-dag-contract-check.json`#' \
   "${TARGET}/tasks/tasks-1234-dag-contract-check.md"
 
+# Undefined dependency target should fail at contract validation time.
+perl -0pi -e 's#- Dependencies: `T-001`#- Dependencies: `T-999`#' \
+  "${TARGET}/tasks/tasks-1234-dag-contract-check.md"
+
+cat > "${TARGET}/tasks/dag-1234-dag-contract-check.json" <<'EOF'
+{
+  "metadata": {
+    "id": "1234",
+    "slug": "dag-contract-check",
+    "prd": "tasks/prd-1234-dag-contract-check.md",
+    "trd": "tasks/trd-1234-dag-contract-check.md",
+    "tasks": "tasks/tasks-1234-dag-contract-check.md",
+    "gate_stack": "python"
+  },
+  "nodes": [
+    {
+      "task_id": "T-001",
+      "depends_on": [],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    },
+    {
+      "task_id": "T-002",
+      "depends_on": ["T-999"],
+      "parallel_safe": false,
+      "stage": "IMPLEMENTATION"
+    }
+  ]
+}
+EOF
+
+set +e
+(cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null 2>&1)
+undefined_dependency_status=$?
+set -e
+
+if [[ "${undefined_dependency_status}" -eq 0 ]]; then
+  echo "[case-12] check passed despite undefined dependency target" >&2
+  exit 1
+fi
+
+perl -0pi -e 's#- Dependencies: `T-999`#- Dependencies: `T-001`#' \
+  "${TARGET}/tasks/tasks-1234-dag-contract-check.md"
+
 # Duplicate DAG task IDs should be rejected by both validator and orchestrator.
 cat > "${TARGET}/tasks/dag-1234-dag-contract-check.json" <<'EOF'
 {
