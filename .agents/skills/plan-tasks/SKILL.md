@@ -27,7 +27,7 @@ Collect or infer these inputs before writing:
 2. Source PRD path (`tasks/prd-<4digit>-<slug>.md`) for product constraints.
 3. Task decomposition boundaries and delivery phases.
 4. Owner and update metadata.
-5. Target stack hint (`python|node|go`) for gate command examples.
+5. Required gate stack (`python|node|go`) for completion checks.
 
 If id/slug is missing, derive from TRD filename:
 
@@ -38,7 +38,12 @@ If id/slug is missing, derive from TRD filename:
   - `tasks/dag-<4digit>-<slug>.md`
   - `tasks/dag-<4digit>-<slug>.json`
 
-If TRD path is not explicitly given, inspect `tasks/trd-*.md` and select the newest relevant file.
+If TRD path is not explicitly given, resolve deterministically:
+
+- Inspect `tasks/trd-*.md`.
+- If exactly one file exists, use it.
+- If multiple files exist, stop and request explicit TRD selection before writing artifacts.
+- If no file exists, stop and report a blocker.
 
 ## Output Contract
 
@@ -61,24 +66,31 @@ Reference contract details from `references/tasks-contract.md`.
 ## Procedure
 
 1. Inspect existing `tasks/tasks-*.md` and `tasks/dag-*.json` files to avoid id/slug collision and unintended overwrite.
-2. Read source TRD first, then PRD, and extract architecture constraints, components, interfaces, and risk boundaries.
-3. Read `tasks/templates/tasks.template.md` and DAG templates; preserve structure.
-4. Materialize target files from templates.
-5. Decompose work into atomic tasks:
+2. Resolve source TRD deterministically when TRD path is omitted:
+   - inspect `tasks/trd-*.md`
+   - if exactly one file exists, use it
+   - if multiple files exist, stop and request explicit TRD selection
+   - if no file exists, stop and report a blocker
+3. Read source TRD first, then PRD, and extract architecture constraints, components, interfaces, and risk boundaries.
+4. Read `tasks/templates/tasks.template.md` and DAG templates; preserve structure.
+5. Materialize target files from templates.
+6. Decompose work into atomic tasks:
    - Keep each task independently verifiable.
    - Express dependency order explicitly.
    - Mark `Parallel-safe: no` unless independence is demonstrable.
-6. Build DAG JSON as source of truth:
+7. Build DAG JSON as source of truth:
    - one node per task id
    - explicit `depends_on` edges
    - `parallel_safe` and `stage` fields per node
-7. Reflect the same dependencies in task file and DAG markdown.
-8. Keep scope bounded to TRD/PRD:
+8. Reflect the same dependencies in task file and DAG markdown.
+9. Keep scope bounded to TRD/PRD:
    - move overflow items to notes or follow-up tasks
    - do not add unapproved feature expansion
-9. Validate contract compatibility:
+10. Validate contract compatibility as preflight:
    - run `./scripts/validate-contracts.sh --project-dir .` when available
-10. If validation fails, revise artifacts and rerun validation.
+11. Run full gate for completion:
+   - run `./scripts/check.sh --stack <python|node|go> --project-dir .`
+12. If validation or gate fails, revise artifacts and rerun checks.
 
 ## Completion Conditions
 
@@ -87,8 +99,13 @@ Mark completion only when all conditions are true:
 1. Exactly one target task file and one DAG pair are created or updated.
 2. Every `### T-...` block includes required contract signals.
 3. DAG dependencies and task dependencies are identical.
-4. No unrelated files are changed.
-5. Contract validation passes (or a blocked reason is recorded if command execution is unavailable).
+4. Metadata fields are populated in generated artifacts:
+   - `Owner`
+   - `Last Updated`
+   - `Gate Stack`
+5. No unrelated files are changed.
+6. Contract validation passes (or a blocked reason is recorded if command execution is unavailable).
+7. `./scripts/check.sh --stack <python|node|go> --project-dir .` exits with code `0` (or a blocked reason is recorded if command execution is unavailable).
 
 ## Failure And Retry Rules
 

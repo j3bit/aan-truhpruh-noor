@@ -90,14 +90,23 @@ fi
 run_step "python compileall" "${PYTHON_BIN}" -m compileall -q .
 
 HAS_TESTS=0
-if find . -type f \( -name 'test_*.py' -o -name '*_test.py' \) -not -path './.git/*' -print -quit | grep -q .; then
+if find . -type f \( -name 'test*.py' -o -name '*_test.py' \) -not -path './.git/*' -not -path './examples/*' -print -quit | grep -q .; then
   HAS_TESTS=1
 fi
 
-if [[ "${HAS_TESTS}" -eq 1 ]] && command -v pytest >/dev/null 2>&1; then
-  run_step "pytest" pytest -q
+HAS_PYTEST_TESTS=0
+if find . -type f \( -name 'test_*.py' -o -name '*_test.py' \) -not -path './.git/*' -not -path './examples/*' -print -quit | grep -q .; then
+  HAS_PYTEST_TESTS=1
+fi
+
+if [[ "${HAS_TESTS}" -eq 1 ]]; then
+  if [[ "${HAS_PYTEST_TESTS}" -eq 1 ]] && command -v pytest >/dev/null 2>&1; then
+    run_step "pytest" pytest -q
+  else
+    run_step "unittest discovery" "${PYTHON_BIN}" -m unittest discover -v
+  fi
 else
-  run_step "unittest discovery" "${PYTHON_BIN}" -m unittest discover -v
+  echo "[python-check] INFO: no Python tests found; skipping test execution"
 fi
 
 if [[ "${FAILED}" -eq 0 ]]; then
