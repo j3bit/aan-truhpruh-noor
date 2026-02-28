@@ -84,6 +84,20 @@ error() {
   echo "[lead-orchestrate] ERROR: $*" >&2
 }
 
+allowed_stages_csv() {
+  stage_router_stages | paste -sd ',' -
+}
+
+ensure_valid_stage() {
+  local stage="$1"
+  local task_id="${2:-unknown}"
+
+  if ! stage_router_index_of "${stage}" >/dev/null 2>&1; then
+    error "Invalid DAG stage '${stage}' for task ${task_id}. Allowed stages: $(allowed_stages_csv)"
+    exit 2
+  fi
+}
+
 normalize_value() {
   local value="$1"
   value="${value//\`/}"
@@ -281,6 +295,8 @@ load_tasks() {
 }
 
 load_dag() {
+  local node_task_id node_deps node_parallel node_stage
+
   DAG_TASK_IDS=()
   DAG_DEPSS=()
   DAG_PARALLELS=()
@@ -296,10 +312,17 @@ load_dag() {
       continue
     fi
     if [[ "${kind}" == "NODE" ]]; then
-      DAG_TASK_IDS+=("$(normalize_value "${a}")")
-      DAG_DEPSS+=("$(normalize_value "${b}")")
-      DAG_PARALLELS+=("$(normalize_value "${c}")")
-      DAG_STAGES+=("$(normalize_value "${d}")")
+      node_task_id="$(normalize_value "${a}")"
+      node_deps="$(normalize_value "${b}")"
+      node_parallel="$(normalize_value "${c}")"
+      node_stage="$(normalize_value "${d}")"
+
+      ensure_valid_stage "${node_stage}" "${node_task_id}"
+
+      DAG_TASK_IDS+=("${node_task_id}")
+      DAG_DEPSS+=("${node_deps}")
+      DAG_PARALLELS+=("${node_parallel}")
+      DAG_STAGES+=("${node_stage}")
     fi
   done < <(perl -MJSON::PP -e '
     use strict;
