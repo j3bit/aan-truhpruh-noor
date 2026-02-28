@@ -13,6 +13,9 @@ Required input signals:
 5. Paired DAG pattern: `tasks/dag-<4digit>-<slug>.json`
 
 If task file path is missing, resolve by searching `tasks/tasks-*.md` for the exact task id heading.
+If task id resolution returns zero matches, do not mutate any task status; report `task id not found` as a request-level blocker and stop.
+If task id resolution returns multiple matches, do not mutate any task status; report ambiguity with candidate task file paths as a request-level blocker and stop.
+If paired artifact files (`PRD`, `TRD`, `DAG`) are missing, set task status to `blocked`, record missing paths, and stop.
 
 ## Task Block Requirements
 
@@ -38,7 +41,7 @@ For behavior changes, the task should include:
 Expected status progression per processed task:
 
 - `todo` -> `in_progress` -> `done`
-- Use `blocked` only when progress cannot continue because of external dependency or unresolved failure after retry limit.
+- Use `blocked` only after a unique target task is resolved, when required paired artifacts are missing, when progress cannot continue because of external dependency, or when failures remain unresolved after retry limit.
 
 Record execution evidence in task notes:
 
@@ -46,6 +49,8 @@ Record execution evidence in task notes:
 2. Pass/fail outcomes
 3. Relevant output artifact paths (if any)
 4. Integration artifact references when conflict directives were consumed.
+5. Contract/interface documentation update evidence when interfaces changed, or explicit `none`.
+6. Follow-up/risk capture entries, or explicit `none`.
 
 ## Gate Commands
 
@@ -66,6 +71,14 @@ Contract-only validation:
 ```bash
 ./scripts/validate-contracts.sh --project-dir .
 ```
+
+## Execution Profile Selection
+
+When execution profile selection is required:
+
+1. Read `${HOME}/.codex/config.toml`.
+2. Use `fast` only when `[profiles.fast]` exists.
+3. Otherwise use `default` and record fallback in task evidence.
 
 ## Retry Policy
 
