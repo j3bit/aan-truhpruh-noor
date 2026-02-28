@@ -90,7 +90,7 @@ fi
 run_step "python compileall" "${PYTHON_BIN}" -m compileall -q .
 
 HAS_TESTS=0
-if find . -type f \( -name 'test_*.py' -o -name '*_test.py' \) -not -path './.git/*' -not -path './examples/*' -print -quit | grep -q .; then
+if find . -type f \( -name 'test*.py' -o -name '*_test.py' \) -not -path './.git/*' -not -path './examples/*' -print -quit | grep -q .; then
   HAS_TESTS=1
 fi
 
