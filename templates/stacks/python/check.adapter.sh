@@ -94,8 +94,13 @@ if find . -type f \( -name 'test*.py' -o -name '*_test.py' \) -not -path './.git
   HAS_TESTS=1
 fi
 
+HAS_PYTEST_TESTS=0
+if find . -type f \( -name 'test_*.py' -o -name '*_test.py' \) -not -path './.git/*' -not -path './examples/*' -print -quit | grep -q .; then
+  HAS_PYTEST_TESTS=1
+fi
+
 if [[ "${HAS_TESTS}" -eq 1 ]]; then
-  if command -v pytest >/dev/null 2>&1; then
+  if [[ "${HAS_PYTEST_TESTS}" -eq 1 ]] && command -v pytest >/dev/null 2>&1; then
     run_step "pytest" pytest -q
   else
     run_step "unittest discovery" "${PYTHON_BIN}" -m unittest discover -v
