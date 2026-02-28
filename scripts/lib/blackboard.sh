@@ -3,6 +3,24 @@ set -euo pipefail
 
 BLACKBOARD_DIR_NAME=".blackboard"
 
+blackboard_ensure_stage_router() {
+  local lib_dir stage_router_path
+
+  if declare -F stage_router_validate_route >/dev/null 2>&1; then
+    return 0
+  fi
+
+  lib_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+  stage_router_path="${lib_dir}/stage-router.sh"
+
+  if [[ -f "${stage_router_path}" ]]; then
+    # shellcheck source=/dev/null
+    source "${stage_router_path}"
+  fi
+
+  declare -F stage_router_validate_route >/dev/null 2>&1
+}
+
 blackboard_now_utc() {
   date -u +"%Y-%m-%dT%H:%M:%SZ"
 }
@@ -56,7 +74,10 @@ blackboard_emit_event() {
   events_file="$(blackboard_root "${project_dir}")/events/events.jsonl"
   ts="$(blackboard_now_utc)"
 
-  if ! stage_router_validate_route "${from_stage}" "${to_stage}"; then
+  if ! blackboard_ensure_stage_router; then
+    status="rejected"
+    blocked_reason="non_adjacent_stage_route"
+  elif ! stage_router_validate_route "${from_stage}" "${to_stage}"; then
     status="rejected"
     blocked_reason="non_adjacent_stage_route"
   fi
