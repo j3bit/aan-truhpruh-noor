@@ -24,23 +24,25 @@ Do not use this skill to implement an individual task. Sub-agents use `process-t
 1. Task file path (`tasks/tasks-<4digit>-<slug>.md`)
 2. DAG json path (`tasks/dag-<4digit>-<slug>.json`)
 3. Gate stack (`python|node|go`)
-4. Optional output dir for orchestration artifacts
+4. Project dir root used to resolve fixed contract paths (`.orchestration/` and `.blackboard/`)
 
 ## Output Contract
 
 Primary orchestration outputs:
 
-- `<out-dir>/plan.jsonl`
-- `<out-dir>/status.jsonl`
-- `<out-dir>/summary.json`
+- `.orchestration/plan.jsonl`
+- `.orchestration/status.jsonl`
+- `.orchestration/summary.json`
 
 Blackboard outputs:
 
+- `.blackboard/artifacts/`
 - `.blackboard/events/events.jsonl`
 - `.blackboard/jobs/<task_id>.json`
 - `.blackboard/integration/waves/wave-<n>.json`
 - `.blackboard/integration/tasks/<task_id>.json`
 - `.blackboard/feedback/qa/*.json`
+- `.blackboard/state/`
 
 Reference contract details from `references/orchestrate-contract.md`.
 
@@ -48,16 +50,17 @@ Reference contract details from `references/orchestrate-contract.md`.
 
 1. Resolve and validate task + DAG artifacts.
 2. Build topological waves from DAG.
-3. For each wave:
+3. Initialize required blackboard structure before writing wave/task artifacts.
+4. For each wave:
    - write wave integration artifact
    - dispatch per-task job manifests (`preferred_profile=fast`, `fallback_allowed=true`)
    - run dependency-safe execution records and gate checks
-4. Emit stage-routed events only through adjacent stages.
-5. If QA failure bundle exists:
+5. Emit stage-routed events only through adjacent stages.
+6. If QA failure bundle exists:
    - allow `QA -> IMPLEMENTATION` event
    - relay `IMPLEMENTATION -> ORCHESTRATION` replan request
-6. Persist status and summary records.
-7. Emit `LOOP_COMPLETE` only on full success.
+7. Persist status and summary records.
+8. Emit `LOOP_COMPLETE` only on full success.
 
 ## Completion Conditions
 
