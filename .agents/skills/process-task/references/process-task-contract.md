@@ -41,7 +41,7 @@ For behavior changes, the task should include:
 Expected status progression per processed task:
 
 - `todo` -> `in_progress` -> `done`
-- Use `blocked` only when progress cannot continue because of external dependency or unresolved failure after retry limit.
+- Use `blocked` when deterministic task resolution fails (`0` or `>1` matches), when required paired artifacts are missing, when progress cannot continue because of external dependency, or when failures remain unresolved after retry limit.
 
 Record execution evidence in task notes:
 

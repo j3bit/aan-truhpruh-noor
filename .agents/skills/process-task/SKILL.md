@@ -116,7 +116,7 @@ After third failure, stop and report:
 - remaining blocker
 - recommended next action
 
-Set task status to `blocked` only for external blockers or unresolved failures after retry limit.
+Set task status to `blocked` when deterministic task resolution fails (`0` or `>1` matches), when required paired artifacts are missing, for external blockers, or for unresolved failures after retry limit.
 
 ## Safety Rules
 
