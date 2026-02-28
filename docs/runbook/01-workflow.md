@@ -3,7 +3,7 @@
 ## Goal
 
 Run AI coding in a stable, repeatable loop:
-PRD -> TRD -> task/DAG planning -> DAG orchestration -> atomic execution -> gate -> review -> merge -> eval.
+IDEATION -> PRD -> TRD -> task/DAG planning -> DAG orchestration -> atomic execution -> gate -> review -> merge -> eval.
 
 ## Operating Steps
 
@@ -11,19 +11,22 @@ Template maintenance commands are documented in `README.md` Quickstart.
 
 Generated project loop (bootstrap output):
 
-1. Create PRD with `create-prd` and save as `tasks/prd-<4digit>-<slug>.md`.
-2. Create TRD and save as `tasks/trd-<4digit>-<slug>.md`.
-3. Create atomic tasks + DAG with `plan-tasks` and save as:
+1. (Optional placeholder stage) produce ideation artifact at `.blackboard/artifacts/ideation/<4digit>-<slug>.json`.
+2. Create PRD with `create-prd` and save as `tasks/prd-<4digit>-<slug>.md`.
+3. Create TRD and save as `tasks/trd-<4digit>-<slug>.md`.
+4. Create atomic tasks + DAG with `plan-tasks` (TRD primary, PRD constraints-only) and save as:
    - `tasks/tasks-<4digit>-<slug>.md`
    - `tasks/dag-<4digit>-<slug>.json`
-4. Lead agent runs `orchestrate-tasks` to build deterministic wave execution from DAG.
-5. Coordinator approves proposal and starts sub-agents only for ready tasks.
-6. Each sub-agent executes exactly one task:
+   - `tasks/dag-<4digit>-<slug>.md`
+   - `.blackboard/artifacts/task-planning/<4digit>-<slug>.json`
+5. Lead agent runs `orchestrate-tasks` to build deterministic wave execution from DAG.
+6. Coordinator approves proposal and starts sub-agents only for ready tasks.
+7. Each sub-agent executes exactly one task:
    - `process-task`
    - optional `fix-failing-checks` (only when gate fails)
    - `pr-review` after gate passes
-7. Create one PR per task and merge in dependency order.
-8. Run `./evals/run-evals.sh` and add/adjust cases after failures.
+8. Create one PR per task and merge in dependency order.
+9. Run `./evals/run-evals.sh` and add/adjust cases after failures.
 
 ## Required Contracts
 

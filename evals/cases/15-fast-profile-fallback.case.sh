@@ -26,6 +26,8 @@ cat > "${TARGET}/tasks/tasks-1234-profile-fallback.md" <<'EOF'
 - PRD: `tasks/prd-1234-profile-fallback.md`
 - TRD: `tasks/trd-1234-profile-fallback.md`
 - Task DAG: `tasks/dag-1234-profile-fallback.json`
+- Task DAG Markdown: `tasks/dag-1234-profile-fallback.md`
+- Planning Artifact: `.blackboard/artifacts/task-planning/1234-profile-fallback.json`
 - Gate Stack: `python`
 - Owner: `eval`
 - Last Updated: `2026-02-27`

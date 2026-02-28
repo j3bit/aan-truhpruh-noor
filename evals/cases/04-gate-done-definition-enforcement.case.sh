@@ -44,6 +44,8 @@ cat > "${TARGET}/tasks/tasks-1234-done-definition.md" <<'EOF'
 - PRD: `tasks/prd-1234-done-definition.md`
 - TRD: `tasks/trd-1234-done-definition.md`
 - Task DAG: `tasks/dag-1234-done-definition.json`
+- Task DAG Markdown: `tasks/dag-1234-done-definition.md`
+- Planning Artifact: `.blackboard/artifacts/task-planning/1234-done-definition.json`
 - Gate Stack: `python`
 - Owner: example
 - Last Updated: 2026-02-22

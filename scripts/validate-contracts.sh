@@ -58,6 +58,10 @@ REQUIRED_SKILL_FILES=(
   ".agents/skills/process-task/SKILL.md"
   ".agents/skills/fix-failing-checks/SKILL.md"
   ".agents/skills/pr-review/SKILL.md"
+  ".agents/skills/ideation-consultant/SKILL.md"
+  ".agents/skills/ideation-consultant/references/ideation-contract.md"
+  ".agents/skills/trd-architect/SKILL.md"
+  ".agents/skills/trd-architect/references/trd-contract.md"
 )
 REQUIRED_TEMPLATE_FILES=(
   ".codex/config.toml"
@@ -68,6 +72,11 @@ REQUIRED_TEMPLATE_FILES=(
   "tasks/templates/trd.template.md"
   "tasks/templates/dag.template.md"
   "tasks/templates/dag.template.json"
+)
+REQUIRED_BLACKBOARD_SCHEMA_FILES=(
+  "tasks/contracts/blackboard/ideation-output.schema.json"
+  "tasks/contracts/blackboard/trd-output.schema.json"
+  "tasks/contracts/blackboard/task-planning-output.schema.json"
 )
 
 if [[ ! -d "${TASKS_DIR}" ]]; then
@@ -92,6 +101,13 @@ done
 for rel_path in "${REQUIRED_TEMPLATE_FILES[@]}"; do
   if [[ ! -f "${PROJECT_DIR}/${rel_path}" ]]; then
     echo "[contracts] FAIL: missing required template artifact: ${rel_path}" >&2
+    FAILED=1
+  fi
+done
+
+for rel_path in "${REQUIRED_BLACKBOARD_SCHEMA_FILES[@]}"; do
+  if [[ ! -f "${PROJECT_DIR}/${rel_path}" ]]; then
+    echo "[contracts] FAIL: missing required blackboard schema: ${rel_path}" >&2
     FAILED=1
   fi
 done
@@ -127,10 +143,36 @@ should_check_file() {
   grep -Fxq "${rel_path}" "${CHANGED_FILES_FILE}"
 }
 
+validate_json_file() {
+  local abs_path="$1"
+  local rel_path="$2"
+
+  if ! perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    my ($path) = @ARGV;
+    local $/;
+    open my $fh, "<", $path or die "open_failed";
+    my $json = <$fh>;
+    close $fh;
+    decode_json($json);
+  ' "${abs_path}" >/dev/null 2>&1; then
+    echo "[contracts] FAIL: invalid json file: ${rel_path}" >&2
+    FAILED=1
+  fi
+}
+
 if ! grep -qi "Trace logging required" "${PROCESS_RULES_FILE}"; then
   echo "[contracts] FAIL: tasks/process-rules.md must include 'Trace logging required'" >&2
   FAILED=1
 fi
+
+for rel_path in "${REQUIRED_BLACKBOARD_SCHEMA_FILES[@]}"; do
+  abs_path="${PROJECT_DIR}/${rel_path}"
+  if [[ -f "${abs_path}" ]] && should_check_file "${rel_path}"; then
+    validate_json_file "${abs_path}" "${rel_path}"
+  fi
+done
 
 check_filename_contract() {
   local rel_path="$1"
@@ -155,6 +197,36 @@ extract_task_dag_metadata_path() {
     /^- Task DAG:/ {
       line = $0
       sub(/^- Task DAG:[[:space:]]*/, "", line)
+      gsub(/`/, "", line)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+      print line
+      exit
+    }
+  ' "${tasks_file}"
+}
+
+extract_task_dag_markdown_metadata_path() {
+  local tasks_file="$1"
+
+  awk '
+    /^- Task DAG Markdown:/ {
+      line = $0
+      sub(/^- Task DAG Markdown:[[:space:]]*/, "", line)
+      gsub(/`/, "", line)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+      print line
+      exit
+    }
+  ' "${tasks_file}"
+}
+
+extract_planning_artifact_metadata_path() {
+  local tasks_file="$1"
+
+  awk '
+    /^- Planning Artifact:/ {
+      line = $0
+      sub(/^- Planning Artifact:[[:space:]]*/, "", line)
       gsub(/`/, "", line)
       gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
       print line
@@ -243,11 +315,15 @@ validate_tasks_metadata_contract() {
     BEGIN {
       has_trd = 0
       has_dag = 0
+      has_dag_markdown = 0
+      has_planning_artifact = 0
       failed = 0
     }
 
     /^- TRD:/ { has_trd = 1 }
     /^- Task DAG:/ { has_dag = 1 }
+    /^- Task DAG Markdown:/ { has_dag_markdown = 1 }
+    /^- Planning Artifact:/ { has_planning_artifact = 1 }
 
     END {
       missing = ""
@@ -256,6 +332,12 @@ validate_tasks_metadata_contract() {
       }
       if (!has_dag) {
         missing = missing " Task DAG"
+      }
+      if (!has_dag_markdown) {
+        missing = missing " Task DAG Markdown"
+      }
+      if (!has_planning_artifact) {
+        missing = missing " Planning Artifact"
       }
       if (missing != "") {
         printf("[contracts] FAIL: %s missing metadata:%s\n", file_path, missing) > "/dev/stderr"
@@ -543,8 +625,10 @@ validate_dependency_targets_exist() {
 validate_task_dag_consistency() {
   local tasks_file="$1"
   local rel_tasks="$2"
-  local base_name id slug expected_dag_rel
+  local base_name id slug expected_dag_rel expected_dag_md_rel expected_planning_artifact_rel
   local metadata_dag metadata_dag_abs metadata_dag_rel
+  local metadata_dag_md metadata_dag_md_abs metadata_dag_md_rel
+  local planning_artifact planning_artifact_abs planning_artifact_rel
   local task_deps_file dag_deps_file
 
   base_name="$(basename "${tasks_file}")"
@@ -554,10 +638,24 @@ validate_task_dag_consistency() {
   slug="${slug%.md}"
 
   expected_dag_rel="tasks/dag-${id}-${slug}.json"
+  expected_dag_md_rel="tasks/dag-${id}-${slug}.md"
+  expected_planning_artifact_rel=".blackboard/artifacts/task-planning/${id}-${slug}.json"
   metadata_dag="$(extract_task_dag_metadata_path "${tasks_file}")"
+  metadata_dag_md="$(extract_task_dag_markdown_metadata_path "${tasks_file}")"
+  planning_artifact="$(extract_planning_artifact_metadata_path "${tasks_file}")"
 
   if [[ -z "${metadata_dag}" ]]; then
     echo "[contracts] FAIL: ${rel_tasks} missing Task DAG metadata value" >&2
+    FAILED=1
+    return
+  fi
+  if [[ -z "${metadata_dag_md}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} missing Task DAG Markdown metadata value" >&2
+    FAILED=1
+    return
+  fi
+  if [[ -z "${planning_artifact}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} missing Planning Artifact metadata value" >&2
     FAILED=1
     return
   fi
@@ -567,11 +665,31 @@ validate_task_dag_consistency() {
   else
     metadata_dag_abs="${PROJECT_DIR}/${metadata_dag}"
   fi
+  if [[ "${metadata_dag_md}" == /* ]]; then
+    metadata_dag_md_abs="${metadata_dag_md}"
+  else
+    metadata_dag_md_abs="${PROJECT_DIR}/${metadata_dag_md}"
+  fi
+  if [[ "${planning_artifact}" == /* ]]; then
+    planning_artifact_abs="${planning_artifact}"
+  else
+    planning_artifact_abs="${PROJECT_DIR}/${planning_artifact}"
+  fi
 
   if [[ "${metadata_dag_abs}" == "${PROJECT_DIR}/"* ]]; then
     metadata_dag_rel="${metadata_dag_abs#${PROJECT_DIR}/}"
   else
     metadata_dag_rel="${metadata_dag_abs}"
+  fi
+  if [[ "${metadata_dag_md_abs}" == "${PROJECT_DIR}/"* ]]; then
+    metadata_dag_md_rel="${metadata_dag_md_abs#${PROJECT_DIR}/}"
+  else
+    metadata_dag_md_rel="${metadata_dag_md_abs}"
+  fi
+  if [[ "${planning_artifact_abs}" == "${PROJECT_DIR}/"* ]]; then
+    planning_artifact_rel="${planning_artifact_abs#${PROJECT_DIR}/}"
+  else
+    planning_artifact_rel="${planning_artifact_abs}"
   fi
 
   if [[ "${metadata_dag_rel}" != "${expected_dag_rel}" ]]; then
@@ -579,9 +697,24 @@ validate_task_dag_consistency() {
     FAILED=1
     return
   fi
+  if [[ "${metadata_dag_md_rel}" != "${expected_dag_md_rel}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} Task DAG Markdown metadata must be ${expected_dag_md_rel}, got ${metadata_dag_md_rel}" >&2
+    FAILED=1
+    return
+  fi
+  if [[ "${planning_artifact_rel}" != "${expected_planning_artifact_rel}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} Planning Artifact metadata must be ${expected_planning_artifact_rel}, got ${planning_artifact_rel}" >&2
+    FAILED=1
+    return
+  fi
 
   if [[ ! -f "${metadata_dag_abs}" ]]; then
     echo "[contracts] FAIL: ${rel_tasks} missing Task DAG json: ${metadata_dag_rel}" >&2
+    FAILED=1
+    return
+  fi
+  if [[ ! -f "${metadata_dag_md_abs}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} missing Task DAG markdown: ${metadata_dag_md_rel}" >&2
     FAILED=1
     return
   fi

@@ -23,8 +23,8 @@ Do not use this skill to create PRDs/TRDs or implement product code.
 
 Collect or infer these inputs before writing:
 
-1. Source TRD path (`tasks/trd-<4digit>-<slug>.md`).
-2. Source PRD path (`tasks/prd-<4digit>-<slug>.md`) for product constraints.
+1. Source TRD path (`tasks/trd-<4digit>-<slug>.md`) as the primary input.
+2. Source PRD path (`tasks/prd-<4digit>-<slug>.md`) for goals/non-goals/constraints validation only.
 3. Task decomposition boundaries and delivery phases.
 4. Owner and update metadata.
 5. Required gate stack (`python|node|go`) for completion checks.
@@ -51,6 +51,8 @@ If TRD path is not explicitly given, resolve deterministically:
 - Output DAG file paths:
   - `tasks/dag-<4digit>-<slug>.md`
   - `tasks/dag-<4digit>-<slug>.json`
+- Output planning artifact path:
+  - `.blackboard/artifacts/task-planning/<4digit>-<slug>.json`
 - Source templates:
   - `tasks/templates/tasks.template.md`
   - `tasks/templates/dag.template.md`
@@ -71,26 +73,28 @@ Reference contract details from `references/tasks-contract.md`.
    - if exactly one file exists, use it
    - if multiple files exist, stop and request explicit TRD selection
    - if no file exists, stop and report a blocker
-3. Read source TRD first, then PRD, and extract architecture constraints, components, interfaces, and risk boundaries.
-4. Read `tasks/templates/tasks.template.md` and DAG templates; preserve structure.
-5. Materialize target files from templates.
-6. Decompose work into atomic tasks:
+3. Read source TRD first and use it as the decomposition source of truth.
+4. Read source PRD only for goals/non-goals/constraints checks and reject scope expansion that is not justified by TRD architecture.
+5. Read `tasks/templates/tasks.template.md` and DAG templates; preserve structure.
+6. Materialize target files from templates.
+7. Decompose work into atomic tasks:
    - Keep each task independently verifiable.
    - Express dependency order explicitly.
    - Mark `Parallel-safe: no` unless independence is demonstrable.
-7. Build DAG JSON as source of truth:
+8. Build DAG JSON as source of truth:
    - one node per task id
    - explicit `depends_on` edges
    - `parallel_safe` and `stage` fields per node
-8. Reflect the same dependencies in task file and DAG markdown.
-9. Keep scope bounded to TRD/PRD:
+9. Reflect the same dependencies in task file and DAG markdown.
+10. Write or update planning artifact at `.blackboard/artifacts/task-planning/<4digit>-<slug>.json` with paths for TRD/PRD/tasks/DAG and generation timestamp.
+11. Keep scope bounded to TRD/PRD:
    - move overflow items to notes or follow-up tasks
    - do not add unapproved feature expansion
-10. Validate contract compatibility as preflight:
+12. Validate contract compatibility as preflight:
    - run `./scripts/validate-contracts.sh --project-dir .` when available
-11. Run full gate for completion:
+13. Run full gate for completion:
    - run `./scripts/check.sh --stack <python|node|go> --project-dir .`
-12. If validation or gate fails, revise artifacts and rerun checks.
+14. If validation or gate fails, revise artifacts and rerun checks.
 
 ## Completion Conditions
 
@@ -103,6 +107,9 @@ Mark completion only when all conditions are true:
    - `Owner`
    - `Last Updated`
    - `Gate Stack`
+   - `Task DAG`
+   - `Task DAG Markdown`
+   - `Planning Artifact`
 5. No unrelated files are changed.
 6. Contract validation passes (or a blocked reason is recorded if command execution is unavailable).
 7. `./scripts/check.sh --stack <python|node|go> --project-dir .` exits with code `0` (or a blocked reason is recorded if command execution is unavailable).
@@ -129,7 +136,7 @@ After the third failure, stop and report:
 
 ## Safety Rules
 
-1. Do not write outside `tasks/` for planning artifacts.
+1. Do not write outside `tasks/` for planning artifacts except the required planning artifact under `.blackboard/artifacts/task-planning/`.
 2. Do not bypass repository process rules in `tasks/process-rules.md`.
 3. Do not implement product code; this skill only produces planning artifacts.
 4. Do not mark implementation complete from planning artifacts alone.

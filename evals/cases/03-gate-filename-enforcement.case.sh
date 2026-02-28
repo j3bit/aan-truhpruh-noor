@@ -37,6 +37,8 @@ cat > "${TARGET}/tasks/tasks-1234-valid.md" <<'EOF'
 - PRD: `tasks/prd-1234-valid.md`
 - TRD: `tasks/trd-1234-valid.md`
 - Task DAG: `tasks/dag-1234-valid.json`
+- Task DAG Markdown: `tasks/dag-1234-valid.md`
+- Planning Artifact: `.blackboard/artifacts/task-planning/1234-valid.json`
 - Gate Stack: `python`
 - Owner: `eval`
 - Last Updated: `2026-02-27`

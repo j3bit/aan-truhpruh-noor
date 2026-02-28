@@ -23,6 +23,8 @@ cat > "${TARGET}/tasks/tasks-1234-parallel-safe-wave.md" <<'EOF'
 - PRD: `tasks/prd-1234-parallel-safe-wave.md`
 - TRD: `tasks/trd-1234-parallel-safe-wave.md`
 - Task DAG: `tasks/dag-1234-parallel-safe-wave.json`
+- Task DAG Markdown: `tasks/dag-1234-parallel-safe-wave.md`
+- Planning Artifact: `.blackboard/artifacts/task-planning/1234-parallel-safe-wave.json`
 - Gate Stack: `python`
 
 ## Task List

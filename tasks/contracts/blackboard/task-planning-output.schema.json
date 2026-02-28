@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tasks/contracts/blackboard/task-planning-output.schema.json",
+  "title": "Task Planning Output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "slug",
+    "trd_path",
+    "prd_path",
+    "tasks_path",
+    "dag_json_path",
+    "dag_md_path",
+    "generated_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9]{4}$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "trd_path": {
+      "type": "string",
+      "pattern": "^tasks/trd-[0-9]{4}-[a-z0-9][a-z0-9-]*\\.md$"
+    },
+    "prd_path": {
+      "type": "string",
+      "pattern": "^tasks/prd-[0-9]{4}-[a-z0-9][a-z0-9-]*\\.md$"
+    },
+    "tasks_path": {
+      "type": "string",
+      "pattern": "^tasks/tasks-[0-9]{4}-[a-z0-9][a-z0-9-]*\\.md$"
+    },
+    "dag_json_path": {
+      "type": "string",
+      "pattern": "^tasks/dag-[0-9]{4}-[a-z0-9][a-z0-9-]*\\.json$"
+    },
+    "dag_md_path": {
+      "type": "string",
+      "pattern": "^tasks/dag-[0-9]{4}-[a-z0-9][a-z0-9-]*\\.md$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
