@@ -422,8 +422,10 @@ validate_task_dag_alignment() {
 compute_waves() {
   local remaining=()
   local resolved=()
-  local task_id dag_idx deps dep
+  local task_id dag_idx deps dep parallel
   local ready_wave=()
+  local ready_safe=()
+  local ready_unsafe=()
   local rem_idx
 
   WAVE_TASKS=()
@@ -439,6 +441,8 @@ compute_waves() {
 
   while [[ "${#remaining[@]}" -gt 0 ]]; do
     ready_wave=()
+    ready_safe=()
+    ready_unsafe=()
 
     for task_id in "${remaining[@]}"; do
       dag_idx="$(find_dag_index "${task_id}")"
@@ -454,12 +458,24 @@ compute_waves() {
       done < <(deps_to_lines_cmd "${deps}")
 
       if [[ "${dep_ready}" == "true" ]]; then
-        ready_wave+=("${task_id}")
+        parallel="$(parallel_to_bool "${DAG_PARALLELS[$dag_idx]}")"
+        if [[ "${parallel}" == "true" ]]; then
+          ready_safe+=("${task_id}")
+        else
+          ready_unsafe+=("${task_id}")
+        fi
       fi
     done
 
-    if [[ "${#ready_wave[@]}" -eq 0 ]]; then
+    if [[ "${#ready_safe[@]}" -eq 0 ]] && [[ "${#ready_unsafe[@]}" -eq 0 ]]; then
       return 1
+    fi
+
+    if [[ "${#ready_safe[@]}" -gt 0 ]]; then
+      ready_wave=(${ready_safe+"${ready_safe[@]}"})
+    else
+      # non-parallel-safe tasks must not start in parallel.
+      ready_wave=("${ready_unsafe[0]}")
     fi
 
     WAVE_TASKS+=("$(printf '%s' "${ready_wave[*]}" | tr ' ' ',')")

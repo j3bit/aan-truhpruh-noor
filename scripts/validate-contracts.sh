@@ -462,7 +462,14 @@ extract_task_dependencies() {
       deps = ""
       next
     }
-  ' "${tasks_file}" | sort > "${out_file}"
+  ' "${tasks_file}" | perl -F'\|' -lane '
+    my ($task_id, $deps_raw) = @F;
+    $task_id //= "";
+    $deps_raw //= "";
+    my @deps = grep { length $_ } split /,/, $deps_raw;
+    @deps = sort @deps;
+    print $task_id . "|" . join(",", @deps);
+  ' | sort > "${out_file}"
 }
 
 extract_dag_dependencies() {
