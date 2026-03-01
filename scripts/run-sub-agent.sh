@@ -7,7 +7,7 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 TASK_ID=""
 PROJECT_DIR=""
 WORKTREE_DIR=""
-STACK=""
+STACKS=""
 PROFILE="default"
 PROFILE_FALLBACK="true"
 WORKER_BACKEND="ralph-codex"
@@ -22,7 +22,7 @@ Usage:
     --task-id <T-...> \
     --project-dir <path> \
     --worktree-dir <path> \
-    --stack <python|node|go> \
+    --stacks <csv> \
     --result-file <path> \
     [--profile <fast|default>] \
     [--profile-fallback <true|false>] \
@@ -57,8 +57,8 @@ while [[ $# -gt 0 ]]; do
       WORKTREE_DIR="$2"
       shift 2
       ;;
-    --stack)
-      STACK="$2"
+    --stacks)
+      STACKS="$2"
       shift 2
       ;;
     --profile)
@@ -97,19 +97,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "${TASK_ID}" || -z "${PROJECT_DIR}" || -z "${WORKTREE_DIR}" || -z "${STACK}" || -z "${RESULT_FILE}" ]]; then
+if [[ -z "${TASK_ID}" || -z "${PROJECT_DIR}" || -z "${WORKTREE_DIR}" || -z "${STACKS}" || -z "${RESULT_FILE}" ]]; then
   error "Missing required arguments"
   usage
   exit 2
 fi
-
-case "${STACK}" in
-  python|node|go) ;;
-  *)
-    error "Unsupported stack '${STACK}'"
-    exit 2
-    ;;
-esac
 
 case "${WORKER_BACKEND}" in
   ralph-codex|codex-exec) ;;
@@ -142,7 +134,7 @@ run_with_timeout() {
 }
 
 run_gate() {
-  if bash "${REPO_ROOT}/scripts/check.sh" --stack "${STACK}" --project-dir "${WORKTREE_DIR}"; then
+  if bash "${REPO_ROOT}/scripts/check.sh" --stacks "${STACKS}" --project-dir "${WORKTREE_DIR}"; then
     GATE_PASSED=true
     return 0
   fi
@@ -167,7 +159,7 @@ run_ralph_backend() {
   if [[ -n "${INTEGRATION_FEEDBACK_FILE}" ]] && [[ -f "${INTEGRATION_FEEDBACK_FILE}" ]]; then
     feedback_hint="Integration conflict feedback is available at ${INTEGRATION_FEEDBACK_FILE}. Resolve it before completion."
   fi
-  prompt_text="Execute task ${TASK_ID} using process-task contract in ${WORKTREE_DIR}. Use TDD and stop only after gate pass and review pass. ${feedback_hint}"
+  prompt_text="Execute task ${TASK_ID} using process-task contract in ${WORKTREE_DIR}. Use TDD and stop only after gate pass and review pass. Use ./scripts/check.sh --stacks ${STACKS}. ${feedback_hint}"
 
   if ! command -v ralph >/dev/null 2>&1; then
     return 127
@@ -189,7 +181,7 @@ run_codex_backend() {
   if [[ -n "${INTEGRATION_FEEDBACK_FILE}" ]] && [[ -f "${INTEGRATION_FEEDBACK_FILE}" ]]; then
     feedback_hint="Integration conflict feedback is available at ${INTEGRATION_FEEDBACK_FILE}. Resolve it before completion."
   fi
-  prompt_text="Execute atomic task ${TASK_ID} in ${WORKTREE_DIR} using process-task skill. Follow TDD. Run ./scripts/check.sh --stack ${STACK} and finish only when complete. ${feedback_hint}"
+  prompt_text="Execute atomic task ${TASK_ID} in ${WORKTREE_DIR} using process-task skill. Follow TDD. Run ./scripts/check.sh --stacks ${STACKS} and finish only when complete. ${feedback_hint}"
 
   if ! command -v codex >/dev/null 2>&1; then
     return 127

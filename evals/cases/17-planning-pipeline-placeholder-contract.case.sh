@@ -8,7 +8,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "planning-placeholder-contract" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 (cd "${TARGET}" && bash ./scripts/validate-contracts.sh --project-dir . >/dev/null)

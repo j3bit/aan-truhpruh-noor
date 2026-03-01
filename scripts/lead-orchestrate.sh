@@ -25,7 +25,6 @@ source "${REPO_ROOT}/scripts/lib/blackboard.sh"
 PROJECT_DIR="${PWD}"
 TASKS_FILE=""
 DAG_FILE=""
-STACK=""
 OUT_DIR=""
 APPROVE=0
 PLAN_ONLY=0
@@ -45,11 +44,13 @@ DAG_TASK_IDS=()
 DAG_DEPSS=()
 DAG_PARALLELS=()
 DAG_STAGES=()
+DAG_STACKSS=()
 UNIQUE_DAG_TASK_IDS=()
 
 WAVE_TASKS=()
 
-DAG_GATE_STACK=""
+DAG_STACK_REGISTRY=""
+DAG_STACK_REGISTRY_ABS=""
 DAG_TASKS_PATH=""
 DAG_TRD_PATH=""
 DAG_PRD_PATH=""
@@ -71,7 +72,6 @@ Usage:
     --project-dir <path> \
     [--tasks-file <path>] \
     [--dag-file <path>] \
-    [--stack <python|node|go>] \
     [--out-dir <path>] \
     [--max-parallel-workers <int>] \
     [--worker-timeout-seconds <int>] \
@@ -153,6 +153,25 @@ deps_to_json() {
     output+="\"${dep}\""
     first=0
   done < <(deps_to_lines_cmd "${deps_raw}")
+
+  output+="]"
+  printf '%s' "${output}"
+}
+
+csv_to_json_array() {
+  local raw="$1"
+  local output="["
+  local first=1
+  local item
+
+  while IFS= read -r item; do
+    [[ -z "${item}" ]] && continue
+    if [[ "${first}" -eq 0 ]]; then
+      output+=","
+    fi
+    output+="\"${item}\""
+    first=0
+  done < <(printf '%s\n' "${raw}" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' | sort -u)
 
   output+="]"
   printf '%s' "${output}"
@@ -316,17 +335,18 @@ load_tasks() {
 }
 
 load_dag() {
-  local node_task_id node_deps node_parallel node_stage
+  local node_task_id node_deps node_parallel node_stage node_stacks
 
   DAG_TASK_IDS=()
   DAG_DEPSS=()
   DAG_PARALLELS=()
   DAG_STAGES=()
+  DAG_STACKSS=()
 
-  while IFS='|' read -r kind a b c d; do
+  while IFS='|' read -r kind a b c d e; do
     [[ -z "${kind}" ]] && continue
     if [[ "${kind}" == "META" ]]; then
-      DAG_GATE_STACK="$(normalize_value "${a}")"
+      DAG_STACK_REGISTRY="$(normalize_value "${a}")"
       DAG_TASKS_PATH="$(normalize_value "${b}")"
       DAG_TRD_PATH="$(normalize_value "${c}")"
       DAG_PRD_PATH="$(normalize_value "${d}")"
@@ -337,13 +357,19 @@ load_dag() {
       node_deps="$(normalize_value "${b}")"
       node_parallel="$(normalize_value "${c}")"
       node_stage="$(normalize_value "${d}")"
+      node_stacks="$(normalize_value "${e}")"
 
       ensure_valid_stage "${node_stage}" "${node_task_id}"
+      if [[ -z "${node_stacks}" ]]; then
+        error "Node ${node_task_id} is missing gate_stacks in DAG"
+        exit 2
+      fi
 
       DAG_TASK_IDS+=("${node_task_id}")
       DAG_DEPSS+=("${node_deps}")
       DAG_PARALLELS+=("${node_parallel}")
       DAG_STAGES+=("${node_stage}")
+      DAG_STACKSS+=("${node_stacks}")
     fi
   done < <(perl -MJSON::PP -e '
     use strict;
@@ -356,22 +382,25 @@ load_dag() {
     my $obj = decode_json($json);
 
     die "missing_metadata\n" unless ref($obj->{metadata}) eq "HASH";
-    for my $k (qw(id slug prd trd tasks gate_stack)) {
+    for my $k (qw(id slug prd trd tasks stack_registry)) {
       die "missing_metadata_key_$k\n" unless defined $obj->{metadata}{$k};
     }
     die "missing_nodes\n" unless ref($obj->{nodes}) eq "ARRAY";
 
-    print join("|", "META", $obj->{metadata}{gate_stack}, $obj->{metadata}{tasks}, $obj->{metadata}{trd}, $obj->{metadata}{prd}) . "\n";
+    print join("|", "META", $obj->{metadata}{stack_registry}, $obj->{metadata}{tasks}, $obj->{metadata}{trd}, $obj->{metadata}{prd}) . "\n";
 
     for my $node (@{$obj->{nodes}}) {
       die "invalid_node\n" unless ref($node) eq "HASH";
       die "missing_task_id\n" unless defined $node->{task_id};
       die "missing_depends_on\n" unless ref($node->{depends_on}) eq "ARRAY";
       die "missing_parallel_safe\n" unless exists $node->{parallel_safe};
+      die "missing_gate_stacks\n" unless ref($node->{gate_stacks}) eq "ARRAY";
+      die "empty_gate_stacks\n" unless @{$node->{gate_stacks}};
       my @deps = sort @{$node->{depends_on}};
+      my @stacks = sort @{$node->{gate_stacks}};
       my $parallel = $node->{parallel_safe} ? "true" : "false";
       my $stage = defined $node->{stage} ? $node->{stage} : "IMPLEMENTATION";
-      print join("|", "NODE", $node->{task_id}, join(",", @deps), $parallel, $stage) . "\n";
+      print join("|", "NODE", $node->{task_id}, join(",", @deps), $parallel, $stage, join(",", @stacks)) . "\n";
     }
   ' "${DAG_FILE}" 2>/dev/null)
 
@@ -599,8 +628,81 @@ risk_level_for_task() {
   fi
 }
 
+stacks_executed_json() {
+  local idx task_id
+  local tmp_file
+  local output="["
+  local first=1
+  local stack_name
+
+  tmp_file="$(mktemp)"
+
+  for ((idx=0; idx<${#DAG_TASK_IDS[@]}; idx++)); do
+    task_id="${DAG_TASK_IDS[$idx]}"
+    if ! is_done "${task_id}"; then
+      continue
+    fi
+    printf '%s\n' "${DAG_STACKSS[$idx]}" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' >> "${tmp_file}"
+  done
+
+  while IFS= read -r stack_name; do
+    [[ -z "${stack_name}" ]] && continue
+    if [[ "${first}" -eq 0 ]]; then
+      output+=","
+    fi
+    output+="\"${stack_name}\""
+    first=0
+  done < <(sort -u "${tmp_file}")
+
+  rm -f "${tmp_file}"
+  output+="]"
+  printf '%s' "${output}"
+}
+
+stacks_executed_csv() {
+  local idx task_id stack_name first=1
+  local tmp_file output=""
+
+  tmp_file="$(mktemp)"
+
+  for ((idx=0; idx<${#DAG_TASK_IDS[@]}; idx++)); do
+    task_id="${DAG_TASK_IDS[$idx]}"
+    if ! is_done "${task_id}"; then
+      continue
+    fi
+    printf '%s\n' "${DAG_STACKSS[$idx]}" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' >> "${tmp_file}"
+  done
+
+  while IFS= read -r stack_name; do
+    [[ -z "${stack_name}" ]] && continue
+    if [[ "${first}" -eq 0 ]]; then
+      output+=","
+    fi
+    output+="${stack_name}"
+    first=0
+  done < <(sort -u "${tmp_file}")
+
+  rm -f "${tmp_file}"
+  printf '%s' "${output}"
+}
+
+run_qa_hard_gate() {
+  local executed_stacks_csv="$1"
+
+  if [[ -z "${executed_stacks_csv}" ]]; then
+    echo "[lead-orchestrate] INFO: no executed stacks detected; skipping qa hard gate"
+    return 0
+  fi
+
+  echo "[lead-orchestrate] INFO: running qa hard gate for stacks: ${executed_stacks_csv}"
+  bash "${REPO_ROOT}/scripts/qa-pipeline.sh" \
+    --project-dir "${PROJECT_DIR}" \
+    --stacks "${executed_stacks_csv}" \
+    --registry "${DAG_STACK_REGISTRY}"
+}
+
 write_plan() {
-  local idx task_id status deps parallel deps_json ready parallel_bool risk dag_idx stage wave
+  local idx task_id status deps parallel deps_json ready parallel_bool risk dag_idx stage wave stacks_json stacks_csv
 
   : > "${PLAN_FILE}"
 
@@ -617,6 +719,8 @@ write_plan() {
 
     dag_idx="$(find_dag_index "${task_id}")"
     stage="${DAG_STAGES[$dag_idx]}"
+    stacks_csv="${DAG_STACKSS[$dag_idx]}"
+    stacks_json="$(csv_to_json_array "${stacks_csv}")"
 
     if [[ "$(to_lower "${status}")" == "done" ]]; then
       ready="false"
@@ -626,8 +730,8 @@ write_plan() {
       ready="false"
     fi
 
-    printf '{"task_id":"%s","dependencies":%s,"parallel_safe":%s,"gate_stack":"%s","risk_level":"%s","ready":%s,"stage":"%s","wave":%s}\n' \
-      "${task_id}" "${deps_json}" "${parallel_bool}" "${STACK}" "${risk}" "${ready}" "${stage}" "${wave}" >> "${PLAN_FILE}"
+    printf '{"task_id":"%s","dependencies":%s,"parallel_safe":%s,"gate_stacks":%s,"risk_level":"%s","ready":%s,"stage":"%s","wave":%s}\n' \
+      "${task_id}" "${deps_json}" "${parallel_bool}" "${stacks_json}" "${risk}" "${ready}" "${stage}" "${wave}" >> "${PLAN_FILE}"
   done
 }
 
@@ -891,11 +995,6 @@ while [[ $# -gt 0 ]]; do
       DAG_FILE="$2"
       shift 2
       ;;
-    --stack)
-      [[ $# -ge 2 ]] || { error "--stack requires a value"; usage; exit 2; }
-      STACK="$2"
-      shift 2
-      ;;
     --out-dir)
       [[ $# -ge 2 ]] || { error "--out-dir requires a value"; usage; exit 2; }
       OUT_DIR="$2"
@@ -1033,30 +1132,19 @@ if ! build_unique_dag_task_ids; then
 fi
 validate_task_dag_alignment
 
-if [[ -z "${STACK}" ]]; then
-  STACK="$(awk '
-    /^- Gate Stack:/ {
-      line=$0
-      sub(/^- Gate Stack:[[:space:]]*/, "", line)
-      gsub(/`/, "", line)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
-      print line
-      exit
-    }
-  ' "${TASKS_FILE}")"
+if [[ -z "${DAG_STACK_REGISTRY}" ]]; then
+  error "DAG metadata.stack_registry is required"
+  exit 2
 fi
-if [[ -z "${STACK}" ]]; then
-  STACK="${DAG_GATE_STACK}"
+if [[ "${DAG_STACK_REGISTRY}" == /* ]]; then
+  DAG_STACK_REGISTRY_ABS="${DAG_STACK_REGISTRY}"
+else
+  DAG_STACK_REGISTRY_ABS="${PROJECT_DIR}/${DAG_STACK_REGISTRY}"
 fi
-
-case "${STACK}" in
-  python|node|go)
-    ;;
-  *)
-    error "Unsupported or missing stack '${STACK}'. Use --stack <python|node|go> or add metadata."
-    exit 2
-    ;;
-esac
+if [[ ! -f "${DAG_STACK_REGISTRY_ABS}" ]]; then
+  error "Stack registry file not found: ${DAG_STACK_REGISTRY_ABS}"
+  exit 2
+fi
 
 if [[ -z "${OUT_DIR}" ]]; then
   OUT_DIR="${PROJECT_DIR}/.orchestration"
@@ -1079,7 +1167,7 @@ if ! compute_waves; then
   done
   : > "${PLAN_FILE}"
   cat > "${SUMMARY_FILE}" <<EOF_SUMMARY
-{"approved":false,"plan_only":false,"stack":"${STACK}","loop_complete":false,"replan_triggered":false,"failed_task":"","qa_feedback_processed":0}
+{"approved":false,"plan_only":false,"loop_complete":false,"replan_triggered":false,"failed_task":"","qa_feedback_processed":0,"stacks_executed":[]}
 EOF_SUMMARY
   error "Unable to compute DAG waves. Check for cyclic dependencies."
   exit 1
@@ -1090,7 +1178,7 @@ write_plan
 if [[ "${PLAN_ONLY}" -eq 1 ]]; then
   : > "${STATUS_FILE}"
   cat > "${SUMMARY_FILE}" <<EOF_SUMMARY
-{"approved":false,"plan_only":true,"stack":"${STACK}","loop_complete":false,"replan_triggered":false,"failed_task":"","qa_feedback_processed":0}
+{"approved":false,"plan_only":true,"loop_complete":false,"replan_triggered":false,"failed_task":"","qa_feedback_processed":0,"stacks_executed":$(stacks_executed_json)}
 EOF_SUMMARY
   echo "[lead-orchestrate] plan written: ${PLAN_FILE}"
   exit 0
@@ -1180,6 +1268,7 @@ for ((wave_idx=0; wave_idx<${#WAVE_TASKS[@]}; wave_idx++)); do
     result_file="${WORKERS_DIR}/${task_id}.result.json"
     worker_log="${WORKERS_DIR}/${task_id}.log"
     integration_feedback_file="$(integration_feedback_file_for_task "${task_id}")"
+    task_stacks="${DAG_STACKSS[$dag_idx]}"
     if [[ ! -f "${integration_feedback_file}" ]]; then
       integration_feedback_file=""
     fi
@@ -1198,7 +1287,7 @@ for ((wave_idx=0; wave_idx<${#WAVE_TASKS[@]}; wave_idx++)); do
       ORCH_TASK_ID="${task_id}" \
       ORCH_PROJECT_DIR="${PROJECT_DIR}" \
       ORCH_WORKTREE_DIR="${workspace_dir}" \
-      ORCH_STACK="${STACK}" \
+      ORCH_STACKS="${task_stacks}" \
       ORCH_PROFILE="${PROFILE_SELECTED}" \
       ORCH_PROFILE_FALLBACK="${PROFILE_FALLBACK}" \
       ORCH_WORKER_BACKEND="${WORKER_BACKEND}" \
@@ -1211,7 +1300,7 @@ for ((wave_idx=0; wave_idx<${#WAVE_TASKS[@]}; wave_idx++)); do
         --task-id "${task_id}"
         --project-dir "${PROJECT_DIR}"
         --worktree-dir "${workspace_dir}"
-        --stack "${STACK}"
+        --stacks "${task_stacks}"
         --profile "${PROFILE_SELECTED}"
         --profile-fallback "${PROFILE_FALLBACK}"
         --worker-backend "${WORKER_BACKEND}"
@@ -1382,6 +1471,11 @@ for ((wave_idx=0; wave_idx<${#WAVE_TASKS[@]}; wave_idx++)); do
 done
 
 if [[ -z "${failed_task}" ]]; then
+  executed_stacks_csv="$(stacks_executed_csv)"
+  if ! run_qa_hard_gate "${executed_stacks_csv}"; then
+    echo "[lead-orchestrate] WARN: qa hard gate failed"
+  fi
+
   qa_feedback_processed="$(process_qa_feedback || echo 0)"
   if [[ "${qa_feedback_processed}" -gt 0 ]]; then
     replan_triggered=true
@@ -1395,7 +1489,7 @@ fi
 write_plan
 
 cat > "${SUMMARY_FILE}" <<EOF_SUMMARY
-{"approved":true,"plan_only":false,"stack":"${STACK}","loop_complete":${loop_complete},"replan_triggered":${replan_triggered},"failed_task":"${failed_task}","qa_feedback_processed":${qa_feedback_processed},"max_parallel_workers":${MAX_PARALLEL_WORKERS},"worker_timeout_seconds":${WORKER_TIMEOUT_SECONDS},"worker_backend":"${WORKER_BACKEND}"}
+{"approved":true,"plan_only":false,"loop_complete":${loop_complete},"replan_triggered":${replan_triggered},"failed_task":"${failed_task}","qa_feedback_processed":${qa_feedback_processed},"max_parallel_workers":${MAX_PARALLEL_WORKERS},"worker_timeout_seconds":${WORKER_TIMEOUT_SECONDS},"worker_backend":"${WORKER_BACKEND}","stacks_executed":$(stacks_executed_json)}
 EOF_SUMMARY
 
 echo "[lead-orchestrate] plan: ${PLAN_FILE}"

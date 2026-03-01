@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="${PWD}"
 CHANGED_ONLY=0
+REGISTRY_PATH="tasks/stacks.json"
+
+if [[ ! -f "${SCRIPT_DIR}/lib/stack-registry.sh" ]]; then
+  echo "[contracts] ERROR: missing stack registry library: ${SCRIPT_DIR}/lib/stack-registry.sh" >&2
+  exit 2
+fi
+
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/lib/stack-registry.sh"
 
 usage() {
   cat <<'USAGE'
 Usage:
-  ./scripts/validate-contracts.sh --project-dir <path> [--changed-only]
+  ./scripts/validate-contracts.sh --project-dir <path> [--changed-only] [--registry <path>]
 
 Exit Codes:
   0: contract checks passed (or skipped because no contract layer exists)
@@ -31,6 +41,11 @@ while [[ $# -gt 0 ]]; do
       CHANGED_ONLY=1
       shift
       ;;
+    --registry)
+      [[ $# -ge 2 ]] || { error "--registry requires a value"; usage; exit 2; }
+      REGISTRY_PATH="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -51,6 +66,7 @@ fi
 PROJECT_DIR="$(cd "${PROJECT_DIR}" && pwd)"
 TASKS_DIR="${PROJECT_DIR}/tasks"
 PROCESS_RULES_FILE="${TASKS_DIR}/process-rules.md"
+STACK_REGISTRY_ABS="$(stack_registry_resolve_path "${PROJECT_DIR}" "${REGISTRY_PATH}")"
 REQUIRED_SKILL_FILES=(
   ".agents/skills/create-prd/SKILL.md"
   ".agents/skills/plan-tasks/SKILL.md"
@@ -72,6 +88,7 @@ REQUIRED_TEMPLATE_FILES=(
   "scripts/qa-generate-scenarios.sh"
   "scripts/qa-pipeline.sh"
   "scripts/static-review.sh"
+  "scripts/lib/stack-registry.sh"
   "scripts/lib/blackboard.sh"
   "scripts/lib/stage-router.sh"
   ".github/workflows/check.yml"
@@ -81,6 +98,7 @@ REQUIRED_TEMPLATE_FILES=(
   "tasks/templates/trd.template.md"
   "tasks/templates/dag.template.md"
   "tasks/templates/dag.template.json"
+  "tasks/stacks.json"
 )
 REQUIRED_BLACKBOARD_SCHEMA_FILES=(
   "tasks/contracts/blackboard/ideation-output.schema.json"
@@ -120,6 +138,14 @@ for rel_path in "${REQUIRED_BLACKBOARD_SCHEMA_FILES[@]}"; do
     FAILED=1
   fi
 done
+
+if [[ ! -f "${STACK_REGISTRY_ABS}" ]]; then
+  echo "[contracts] FAIL: missing stack registry: ${STACK_REGISTRY_ABS#${PROJECT_DIR}/}" >&2
+  FAILED=1
+elif ! stack_registry_validate "${STACK_REGISTRY_ABS}" "${PROJECT_DIR}"; then
+  echo "[contracts] FAIL: invalid stack registry: ${STACK_REGISTRY_ABS#${PROJECT_DIR}/}" >&2
+  FAILED=1
+fi
 
 CHANGED_FILES_FILE="$(mktemp)"
 cleanup() {
@@ -244,6 +270,21 @@ extract_planning_artifact_metadata_path() {
   ' "${tasks_file}"
 }
 
+extract_stack_registry_metadata_path() {
+  local tasks_file="$1"
+
+  awk '
+    /^- Stack Registry:/ {
+      line = $0
+      sub(/^- Stack Registry:[[:space:]]*/, "", line)
+      gsub(/`/, "", line)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+      print line
+      exit
+    }
+  ' "${tasks_file}"
+}
+
 validate_task_file_block_contract() {
   local file="$1"
   local rel_path="$2"
@@ -326,6 +367,7 @@ validate_tasks_metadata_contract() {
       has_dag = 0
       has_dag_markdown = 0
       has_planning_artifact = 0
+      has_stack_registry = 0
       failed = 0
     }
 
@@ -333,6 +375,7 @@ validate_tasks_metadata_contract() {
     /^- Task DAG:/ { has_dag = 1 }
     /^- Task DAG Markdown:/ { has_dag_markdown = 1 }
     /^- Planning Artifact:/ { has_planning_artifact = 1 }
+    /^- Stack Registry:/ { has_stack_registry = 1 }
 
     END {
       missing = ""
@@ -347,6 +390,9 @@ validate_tasks_metadata_contract() {
       }
       if (!has_planning_artifact) {
         missing = missing " Planning Artifact"
+      }
+      if (!has_stack_registry) {
+        missing = missing " Stack Registry"
       }
       if (missing != "") {
         printf("[contracts] FAIL: %s missing metadata:%s\n", file_path, missing) > "/dev/stderr"
@@ -570,16 +616,24 @@ extract_dag_dependencies() {
   if ! perl -MJSON::PP -e '
     use strict;
     use warnings;
-    my ($path) = @ARGV;
+    my ($path, $registry_path) = @ARGV;
     local $/;
     open my $fh, "<", $path or die "open_failed";
     my $json = <$fh>;
     close $fh;
     my $obj = decode_json($json);
     die "missing_metadata" unless ref($obj->{metadata}) eq "HASH";
-    for my $k (qw(id slug prd trd tasks gate_stack)) {
+    for my $k (qw(id slug prd trd tasks stack_registry)) {
       die "missing_metadata_key_$k" unless defined $obj->{metadata}{$k};
     }
+    local $/;
+    open my $rfh, "<", $registry_path or die "open_registry_failed";
+    my $registry_raw = <$rfh>;
+    close $rfh;
+    my $registry = decode_json($registry_raw);
+    die "invalid_registry_missing_stacks" unless ref($registry->{stacks}) eq "ARRAY";
+    my %stack_lookup = map { $_->{name} => 1 } @{$registry->{stacks}};
+
     die "missing_nodes" unless ref($obj->{nodes}) eq "ARRAY";
     my %seen_task_id = ();
     for my $node (@{$obj->{nodes}}) {
@@ -587,11 +641,17 @@ extract_dag_dependencies() {
       die "missing_task_id" unless defined $node->{task_id};
       die "missing_depends_on" unless ref($node->{depends_on}) eq "ARRAY";
       die "missing_parallel_safe" unless exists $node->{parallel_safe};
+      die "missing_gate_stacks" unless ref($node->{gate_stacks}) eq "ARRAY";
+      die "empty_gate_stacks" unless @{$node->{gate_stacks}};
+      for my $stack_name (@{$node->{gate_stacks}}) {
+        die "invalid_gate_stack_entry" unless defined $stack_name && !ref($stack_name) && $stack_name ne "";
+        die "unknown_gate_stack_$stack_name" unless $stack_lookup{$stack_name};
+      }
       die "duplicate_task_id_$node->{task_id}" if $seen_task_id{$node->{task_id}}++;
       my @deps = sort @{$node->{depends_on}};
       print $node->{task_id} . "|" . join(",", @deps) . "\n";
     }
-  ' "${dag_file}" > "${out_file}.raw" 2>/dev/null; then
+  ' "${dag_file}" "${STACK_REGISTRY_ABS}" > "${out_file}.raw" 2>/dev/null; then
     echo "[contracts] FAIL: invalid DAG json schema: ${dag_file}" >&2
     FAILED=1
     return
@@ -599,6 +659,24 @@ extract_dag_dependencies() {
 
   sed '/^$/d' "${out_file}.raw" | sort > "${out_file}"
   rm -f "${out_file}.raw"
+}
+
+extract_dag_stack_registry_path() {
+  local dag_file="$1"
+
+  perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    my ($path) = @ARGV;
+    local $/;
+    open my $fh, "<", $path or die "open_failed";
+    my $raw = <$fh>;
+    close $fh;
+    my $obj = decode_json($raw);
+    die "missing_metadata" unless ref($obj->{metadata}) eq "HASH";
+    die "missing_stack_registry" unless defined $obj->{metadata}{stack_registry};
+    print $obj->{metadata}{stack_registry};
+  ' "${dag_file}" 2>/dev/null
 }
 
 validate_dependency_targets_exist() {
@@ -634,10 +712,12 @@ validate_dependency_targets_exist() {
 validate_task_dag_consistency() {
   local tasks_file="$1"
   local rel_tasks="$2"
-  local base_name id slug expected_dag_rel expected_dag_md_rel expected_planning_artifact_rel
+  local base_name id slug expected_dag_rel expected_dag_md_rel expected_planning_artifact_rel expected_stack_registry_rel
   local metadata_dag metadata_dag_abs metadata_dag_rel
   local metadata_dag_md metadata_dag_md_abs metadata_dag_md_rel
   local planning_artifact planning_artifact_abs planning_artifact_rel
+  local stack_registry stack_registry_abs stack_registry_rel
+  local dag_stack_registry dag_stack_registry_abs dag_stack_registry_rel
   local task_deps_file dag_deps_file
 
   base_name="$(basename "${tasks_file}")"
@@ -649,9 +729,11 @@ validate_task_dag_consistency() {
   expected_dag_rel="tasks/dag-${id}-${slug}.json"
   expected_dag_md_rel="tasks/dag-${id}-${slug}.md"
   expected_planning_artifact_rel=".blackboard/artifacts/task-planning/${id}-${slug}.json"
+  expected_stack_registry_rel="tasks/stacks.json"
   metadata_dag="$(extract_task_dag_metadata_path "${tasks_file}")"
   metadata_dag_md="$(extract_task_dag_markdown_metadata_path "${tasks_file}")"
   planning_artifact="$(extract_planning_artifact_metadata_path "${tasks_file}")"
+  stack_registry="$(extract_stack_registry_metadata_path "${tasks_file}")"
 
   if [[ -z "${metadata_dag}" ]]; then
     echo "[contracts] FAIL: ${rel_tasks} missing Task DAG metadata value" >&2
@@ -665,6 +747,11 @@ validate_task_dag_consistency() {
   fi
   if [[ -z "${planning_artifact}" ]]; then
     echo "[contracts] FAIL: ${rel_tasks} missing Planning Artifact metadata value" >&2
+    FAILED=1
+    return
+  fi
+  if [[ -z "${stack_registry}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} missing Stack Registry metadata value" >&2
     FAILED=1
     return
   fi
@@ -684,6 +771,11 @@ validate_task_dag_consistency() {
   else
     planning_artifact_abs="${PROJECT_DIR}/${planning_artifact}"
   fi
+  if [[ "${stack_registry}" == /* ]]; then
+    stack_registry_abs="${stack_registry}"
+  else
+    stack_registry_abs="${PROJECT_DIR}/${stack_registry}"
+  fi
 
   if [[ "${metadata_dag_abs}" == "${PROJECT_DIR}/"* ]]; then
     metadata_dag_rel="${metadata_dag_abs#${PROJECT_DIR}/}"
@@ -699,6 +791,11 @@ validate_task_dag_consistency() {
     planning_artifact_rel="${planning_artifact_abs#${PROJECT_DIR}/}"
   else
     planning_artifact_rel="${planning_artifact_abs}"
+  fi
+  if [[ "${stack_registry_abs}" == "${PROJECT_DIR}/"* ]]; then
+    stack_registry_rel="${stack_registry_abs#${PROJECT_DIR}/}"
+  else
+    stack_registry_rel="${stack_registry_abs}"
   fi
 
   if [[ "${metadata_dag_rel}" != "${expected_dag_rel}" ]]; then
@@ -716,6 +813,11 @@ validate_task_dag_consistency() {
     FAILED=1
     return
   fi
+  if [[ "${stack_registry_rel}" != "${expected_stack_registry_rel}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} Stack Registry metadata must be ${expected_stack_registry_rel}, got ${stack_registry_rel}" >&2
+    FAILED=1
+    return
+  fi
 
   if [[ ! -f "${metadata_dag_abs}" ]]; then
     echo "[contracts] FAIL: ${rel_tasks} missing Task DAG json: ${metadata_dag_rel}" >&2
@@ -724,6 +826,33 @@ validate_task_dag_consistency() {
   fi
   if [[ ! -f "${metadata_dag_md_abs}" ]]; then
     echo "[contracts] FAIL: ${rel_tasks} missing Task DAG markdown: ${metadata_dag_md_rel}" >&2
+    FAILED=1
+    return
+  fi
+  if [[ ! -f "${stack_registry_abs}" ]]; then
+    echo "[contracts] FAIL: ${rel_tasks} missing Stack Registry file: ${stack_registry_rel}" >&2
+    FAILED=1
+    return
+  fi
+
+  dag_stack_registry="$(extract_dag_stack_registry_path "${metadata_dag_abs}" || true)"
+  if [[ -z "${dag_stack_registry}" ]]; then
+    echo "[contracts] FAIL: ${metadata_dag_rel} missing metadata.stack_registry" >&2
+    FAILED=1
+    return
+  fi
+  if [[ "${dag_stack_registry}" == /* ]]; then
+    dag_stack_registry_abs="${dag_stack_registry}"
+  else
+    dag_stack_registry_abs="${PROJECT_DIR}/${dag_stack_registry}"
+  fi
+  if [[ "${dag_stack_registry_abs}" == "${PROJECT_DIR}/"* ]]; then
+    dag_stack_registry_rel="${dag_stack_registry_abs#${PROJECT_DIR}/}"
+  else
+    dag_stack_registry_rel="${dag_stack_registry_abs}"
+  fi
+  if [[ "${dag_stack_registry_rel}" != "${expected_stack_registry_rel}" ]]; then
+    echo "[contracts] FAIL: ${metadata_dag_rel} metadata.stack_registry must be ${expected_stack_registry_rel}, got ${dag_stack_registry_rel}" >&2
     FAILED=1
     return
   fi
