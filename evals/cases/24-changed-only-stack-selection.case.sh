@@ -19,18 +19,18 @@ bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   git -c user.name='eval' -c user.email='eval@example.com' commit -q -m "baseline"
 )
 
-echo "// changed by eval case 24" >> "${TARGET}/services/node-hello/test/basic.test.js"
+echo "# changed by eval case 24" >> "${TARGET}/services/python-hello/main.py"
 
 (cd "${TARGET}" && bash ./scripts/check.sh --stacks auto --changed-only > "${LOG_FILE}")
 
-if ! grep -Fq "[check] selected_stacks=node" "${LOG_FILE}"; then
-  echo "[case-24] changed-only selection did not isolate node stack" >&2
+if ! grep -Fq "[check] selected_stacks=python" "${LOG_FILE}"; then
+  echo "[case-24] changed-only selection did not isolate python stack" >&2
   cat "${LOG_FILE}" >&2
   exit 1
 fi
 
-if grep -Eq "\\[check\\] selected_stacks=(python,node|node,python)" "${LOG_FILE}"; then
-  echo "[case-24] changed-only selection unexpectedly included python stack" >&2
+if grep -Eq "\\[check\\] selected_stacks=(python,node|node,python|node)" "${LOG_FILE}"; then
+  echo "[case-24] changed-only selection unexpectedly included non-python stack" >&2
   cat "${LOG_FILE}" >&2
   exit 1
 fi

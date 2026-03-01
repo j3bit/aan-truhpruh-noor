@@ -187,6 +187,73 @@ stack_registry_project_rows() {
   ' "${registry_abs}" "${stack_name}"
 }
 
+stack_registry_glob_to_regex() {
+  local glob="$1"
+  local regex="^"
+  local length=0
+  local i=0
+  local char next_char next_next_char
+
+  length="${#glob}"
+  while (( i < length )); do
+    char="${glob:i:1}"
+    case "${char}" in
+      '*')
+        next_char=""
+        next_next_char=""
+        if (( i + 1 < length )); then
+          next_char="${glob:i+1:1}"
+        fi
+        if (( i + 2 < length )); then
+          next_next_char="${glob:i+2:1}"
+        fi
+
+        if [[ "${next_char}" == "*" ]]; then
+          if [[ "${next_next_char}" == "/" ]]; then
+            # Support globstar directory semantics: zero or more directories.
+            regex+="([^/]*/)*"
+            i=$((i + 3))
+          else
+            regex+=".*"
+            i=$((i + 2))
+          fi
+        else
+          regex+="[^/]*"
+          i=$((i + 1))
+        fi
+        ;;
+      '?')
+        regex+="[^/]"
+        i=$((i + 1))
+        ;;
+      '.')
+        regex+="\\."
+        i=$((i + 1))
+        ;;
+      '^'|'$'|'+'|'('|')'|'['|']'|'{'|'}'|'|'|'\\')
+        regex+="\\${char}"
+        i=$((i + 1))
+        ;;
+      *)
+        regex+="${char}"
+        i=$((i + 1))
+        ;;
+    esac
+  done
+
+  regex+="$"
+  printf '%s\n' "${regex}"
+}
+
+stack_registry_path_matches_glob() {
+  local path_value="$1"
+  local glob_pattern="$2"
+  local regex
+
+  regex="$(stack_registry_glob_to_regex "${glob_pattern}")"
+  [[ "${path_value}" =~ ${regex} ]]
+}
+
 stack_registry_select_from_changed() {
   local registry_abs="$1"
   local changed_files_file="$2"
@@ -223,7 +290,7 @@ stack_registry_select_from_changed() {
         while IFS= read -r changed_file; do
           [[ -n "${changed_file}" ]] || continue
           changed_file="${changed_file#./}"
-          if [[ "${changed_file}" == ${full_glob} ]]; then
+          if stack_registry_path_matches_glob "${changed_file}" "${full_glob}"; then
             stack_matched=1
             break
           fi

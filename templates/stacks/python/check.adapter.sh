@@ -59,7 +59,11 @@ if [[ "${CHANGED_ONLY}" -eq 1 ]] && command -v git >/dev/null 2>&1; then
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     while IFS= read -r file; do
       [[ -n "${file}" ]] && CHANGED_FILES+=("${file}")
-    done < <(git diff --name-only --diff-filter=ACMRTUXB -- '*.py' 2>/dev/null || true)
+    done < <({
+      git diff --name-only --relative --diff-filter=ACMRTUXB -- '*.py' 2>/dev/null || true
+      git diff --cached --name-only --relative --diff-filter=ACMRTUXB -- '*.py' 2>/dev/null || true
+      git ls-files --others --exclude-standard -- '*.py' 2>/dev/null || true
+    } | sed '/^$/d' | sort -u)
   fi
 fi
 
