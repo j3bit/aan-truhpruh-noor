@@ -8,7 +8,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "done-definition-check" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-done-definition.md"
@@ -23,13 +23,14 @@ cat > "${TARGET}/tasks/dag-1234-done-definition.json" <<'EOF'
     "prd": "tasks/prd-1234-done-definition.md",
     "trd": "tasks/trd-1234-done-definition.md",
     "tasks": "tasks/tasks-1234-done-definition.md",
-    "gate_stack": "python"
+    "stack_registry": "tasks/stacks.json"
   },
   "nodes": [
     {
       "task_id": "T-001",
       "depends_on": [],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     }
   ]
@@ -46,7 +47,7 @@ cat > "${TARGET}/tasks/tasks-1234-done-definition.md" <<'EOF'
 - Task DAG: `tasks/dag-1234-done-definition.json`
 - Task DAG Markdown: `tasks/dag-1234-done-definition.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/1234-done-definition.json`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Owner: example
 - Last Updated: 2026-02-22
 
@@ -59,11 +60,11 @@ cat > "${TARGET}/tasks/tasks-1234-done-definition.md" <<'EOF'
 - Acceptance Criteria:
   1. Contract validator should detect missing done definition.
 - Test Plan:
-  1. Run `./scripts/check.sh --stack python`.
+  1. Run `./scripts/check.sh --stacks auto`.
 EOF
 
 set +e
-(cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null 2>&1)
+(cd "${TARGET}" && bash ./scripts/check.sh --stacks auto >/dev/null 2>&1)
 missing_status=$?
 set -e
 
@@ -76,7 +77,7 @@ cat >> "${TARGET}/tasks/tasks-1234-done-definition.md" <<'EOF'
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack python` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 EOF
 
-(cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null)
+(cd "${TARGET}" && bash ./scripts/check.sh --stacks auto >/dev/null)

@@ -23,7 +23,7 @@ Do not use this skill to implement an individual task. Sub-agents use `process-t
 
 1. Task file path (`tasks/tasks-<4digit>-<slug>.md`)
 2. DAG json path (`tasks/dag-<4digit>-<slug>.json`)
-3. Gate stack (`python|node|go`)
+3. Stack registry path (`tasks/stacks.json`) and DAG node `gate_stacks`
 4. Project dir root used to resolve fixed contract paths (`.orchestration/` and `.blackboard/`)
 
 ## Output Contract

@@ -8,7 +8,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "hygiene-check" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 if find "${TARGET}" -type d \( -name '__pycache__' -o -name '.cache' \) -print -quit | grep -q .; then

@@ -8,7 +8,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "prd-required-sections" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/trd.template.md" "${TARGET}/tasks/trd-1234-prd-required-sections.md"
@@ -22,19 +22,21 @@ cat > "${TARGET}/tasks/dag-1234-prd-required-sections.json" <<'EOF'
     "prd": "tasks/prd-1234-prd-required-sections.md",
     "trd": "tasks/trd-1234-prd-required-sections.md",
     "tasks": "tasks/tasks-1234-prd-required-sections.md",
-    "gate_stack": "python"
+    "stack_registry": "tasks/stacks.json"
   },
   "nodes": [
     {
       "task_id": "T-001",
       "depends_on": [],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     },
     {
       "task_id": "T-002",
       "depends_on": ["T-001"],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     }
   ]
@@ -58,7 +60,7 @@ cat > "${TARGET}/tasks/tasks-1234-prd-required-sections.md" <<'EOF'
 - Task DAG: `tasks/dag-1234-prd-required-sections.json`
 - Task DAG Markdown: `tasks/dag-1234-prd-required-sections.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/1234-prd-required-sections.json`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Owner: `eval`
 - Last Updated: `2026-02-27`
 
@@ -77,7 +79,7 @@ cat > "${TARGET}/tasks/tasks-1234-prd-required-sections.md" <<'EOF'
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack python` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 
 ### T-002: dependent
 - Status: `todo`
@@ -92,11 +94,11 @@ cat > "${TARGET}/tasks/tasks-1234-prd-required-sections.md" <<'EOF'
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack python` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 EOF
 
 set +e
-(cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null 2>&1)
+(cd "${TARGET}" && bash ./scripts/check.sh --stacks auto >/dev/null 2>&1)
 missing_status=$?
 set -e
 
@@ -106,4 +108,4 @@ if [[ "${missing_status}" -eq 0 ]]; then
 fi
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-prd-required-sections.md"
-(cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null)
+(cd "${TARGET}" && bash ./scripts/check.sh --stacks auto >/dev/null)

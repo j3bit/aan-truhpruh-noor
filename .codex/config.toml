@@ -3,7 +3,7 @@ multi_agent = true
 
 [orchestration]
 mode = "lead_orchestrated"
-ssot = ["codebase", "tasks/prd-*.md", "tasks/trd-*.md", "tasks/tasks-*.md", "tasks/dag-*.json"]
+ssot = ["codebase", "tasks/prd-*.md", "tasks/trd-*.md", "tasks/tasks-*.md", "tasks/dag-*.json", "tasks/stacks.json"]
 command = "./scripts/lead-orchestrate.sh --project-dir . --tasks-file <tasks-file> --dag-file <dag-file> --approve"
 replan_trigger = "failure_or_blocker"
 allow_replan_on_success = false
@@ -15,7 +15,7 @@ required_fields = [
   "task_id",
   "dependencies",
   "parallel_safe",
-  "gate_stack",
+  "gate_stacks",
   "risk_level",
   "ready",
   "stage",
@@ -38,8 +38,7 @@ required_fields = [
 ]
 
 [gate]
-command = "./scripts/check.sh --stack {{stack}}"
-stack_source = "tasks_metadata.gate_stack"
+command = "./scripts/check.sh --stacks auto"
 
 [actor]
 stage_model = "IDEATION,PRD,TRD,TASK_PLANNING,ORCHESTRATION,IMPLEMENTATION,QA,DEPLOYMENT"

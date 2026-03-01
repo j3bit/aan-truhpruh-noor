@@ -24,14 +24,14 @@ Do not use this skill to create PRDs or generate new task plans from scratch.
 Collect or infer these inputs before writing:
 
 1. Failing command and full failure output (local or CI logs).
-2. Target stack (`python|node|go`) and optional `--project-dir`.
+2. Target stacks selector (`--stacks <csv|auto>`) and optional `--project-dir`.
 3. Optional linked task context (`Task ID`, task file path, acceptance criteria).
 4. Scope boundaries (what must not be changed).
 
 If command context is incomplete, reconstruct from repository standards:
 
-- Primary gate command: `./scripts/check.sh --stack <python|node|go>`
-- Optional project path variant: `./scripts/check.sh --stack <python|node|go> --project-dir <path>`
+- Primary gate command: `./scripts/check.sh --stacks <csv|auto>`
+- Optional project path variant: `./scripts/check.sh --stacks <csv|auto> --project-dir <path>`
 
 ## Output Contract
 
@@ -58,7 +58,7 @@ Reference contract details from `references/fix-failing-checks-contract.md`.
    - environment/configuration
 3. Apply the smallest fix that targets only that first failing signal.
 4. Re-run the nearest relevant check for that signal.
-5. Re-run full gate command (`./scripts/check.sh --stack <python|node|go> ...`).
+5. Re-run full gate command (`./scripts/check.sh --stacks <csv|auto> ...`).
 6. If another signal fails, repeat the same first-failure workflow.
 7. Perform a bounded diff review:
    - confirm no unrelated scope expansion

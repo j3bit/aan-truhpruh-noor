@@ -10,7 +10,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "qa-relay" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-qa-relay.md"
@@ -26,7 +26,7 @@ cat > "${TARGET}/tasks/tasks-1234-qa-relay.md" <<'EOF'
 - Task DAG: `tasks/dag-1234-qa-relay.json`
 - Task DAG Markdown: `tasks/dag-1234-qa-relay.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/1234-qa-relay.json`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Owner: `eval`
 - Last Updated: `2026-02-27`
 
@@ -45,7 +45,7 @@ cat > "${TARGET}/tasks/tasks-1234-qa-relay.md" <<'EOF'
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack python` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 EOF
 
 cat > "${TARGET}/tasks/dag-1234-qa-relay.md" <<'EOF'
@@ -56,7 +56,7 @@ cat > "${TARGET}/tasks/dag-1234-qa-relay.md" <<'EOF'
 - PRD: `tasks/prd-1234-qa-relay.md`
 - TRD: `tasks/trd-1234-qa-relay.md`
 - Tasks: `tasks/tasks-1234-qa-relay.md`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Last Updated: 2026-02-27
 
 ## Nodes
@@ -76,13 +76,14 @@ cat > "${TARGET}/tasks/dag-1234-qa-relay.json" <<'EOF'
     "prd": "tasks/prd-1234-qa-relay.md",
     "trd": "tasks/trd-1234-qa-relay.md",
     "tasks": "tasks/tasks-1234-qa-relay.md",
-    "gate_stack": "python"
+    "stack_registry": "tasks/stacks.json"
   },
   "nodes": [
     {
       "task_id": "T-001",
       "depends_on": [],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     }
   ]

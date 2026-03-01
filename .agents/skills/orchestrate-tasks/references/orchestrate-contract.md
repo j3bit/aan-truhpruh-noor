@@ -4,7 +4,7 @@
 
 1. `tasks/tasks-<4digit>-<slug>.md`
 2. `tasks/dag-<4digit>-<slug>.json`
-3. `- Gate Stack:` metadata in task file or explicit `--stack`
+3. `- Stack Registry:` metadata in task file or explicit `--stacks <csv|auto>`
 
 ## Required Orchestration Artifacts
 

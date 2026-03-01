@@ -7,7 +7,7 @@
 - Task DAG: `tasks/dag-<4digit>-<slug>.json`
 - Task DAG Markdown: `tasks/dag-<4digit>-<slug>.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/<4digit>-<slug>.json`
-- Gate Stack: `<python|node|go>`
+- Stack Registry: `tasks/stacks.json`
 - Owner:
 - Last Updated:
 
@@ -17,6 +17,7 @@
 - Do not close task before gate passes.
 - Dependencies must match `tasks/dag-<4digit>-<slug>.json`.
 - `Task DAG` and `Task DAG Markdown` metadata must point to matching id/slug DAG files.
+- `Stack Registry` must point to `tasks/stacks.json`.
 
 ## Task List
 
@@ -35,7 +36,7 @@
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack <python|node|go>` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 - Notes:
   - 
 
@@ -54,7 +55,7 @@
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack <python|node|go>` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 - Notes:
   - 
 

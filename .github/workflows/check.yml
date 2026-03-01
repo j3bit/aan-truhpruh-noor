@@ -45,20 +45,9 @@ jobs:
       - name: Run template smoke test
         run: ./scripts/smoke-test.sh
 
-      - name: Run root gate (if stack marker exists)
+      - name: Run root gate
         run: |
-          if [[ -f go.mod ]]; then
-            echo "[ci] detected stack=go"
-            ./scripts/check.sh --stack go
-          elif [[ -f package.json ]]; then
-            echo "[ci] detected stack=node"
-            ./scripts/check.sh --stack node
-          elif [[ -f pyproject.toml || -f requirements.txt || -f setup.py ]] || find . -maxdepth 1 -type f -name '*.py' -print -quit | grep -q .; then
-            echo "[ci] detected stack=python"
-            ./scripts/check.sh --stack python
-          else
-            echo "[ci] no root stack marker found; skipping root gate"
-          fi
+          ./scripts/check.sh --stacks auto
 
       - name: Run evals (hybrid)
         run: ./evals/run-evals.sh
@@ -94,27 +83,9 @@ jobs:
         run: |
           find scripts templates/stacks evals -type f -name '*.sh' -exec chmod +x {} +
 
-      - name: Detect root stack
-        id: detect-stack
-        run: |
-          if [[ -f go.mod ]]; then
-            echo "stack=go" >> "${GITHUB_OUTPUT}"
-          elif [[ -f package.json ]]; then
-            echo "stack=node" >> "${GITHUB_OUTPUT}"
-          elif [[ -f pyproject.toml || -f requirements.txt || -f setup.py ]] || find . -maxdepth 1 -type f -name '*.py' -print -quit | grep -q .; then
-            echo "stack=python" >> "${GITHUB_OUTPUT}"
-          else
-            echo "stack=none" >> "${GITHUB_OUTPUT}"
-          fi
-
       - name: Run QA + Static Hard Gate
-        if: ${{ steps.detect-stack.outputs.stack != 'none' }}
         run: |
-          ./scripts/qa-pipeline.sh --project-dir . --stack "${{ steps.detect-stack.outputs.stack }}"
-
-      - name: Skip QA when no stack marker exists
-        if: ${{ steps.detect-stack.outputs.stack == 'none' }}
-        run: echo "[ci] no root stack marker found; skipping qa-and-static"
+          ./scripts/qa-pipeline.sh --project-dir . --stacks auto
 
       - name: Upload QA and static reports
         if: always()

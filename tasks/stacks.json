@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "stacks": [
+    {
+      "name": "python",
+      "adapter": "templates/stacks/python/check.adapter.sh",
+      "projects": [
+        {
+          "path": "examples/python-hello",
+          "owned_paths": [
+            "**/*.py",
+            "pyproject.toml",
+            "requirements*.txt",
+            "setup.py"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "node",
+      "adapter": "templates/stacks/node/check.adapter.sh",
+      "projects": [
+        {
+          "path": "examples/node-hello",
+          "owned_paths": [
+            "**/*.js",
+            "**/*.mjs",
+            "**/*.cjs",
+            "**/*.ts",
+            "**/*.tsx",
+            "package.json",
+            "package-lock.json",
+            "pnpm-lock.yaml",
+            "yarn.lock"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "go",
+      "adapter": "templates/stacks/go/check.adapter.sh",
+      "projects": [
+        {
+          "path": "examples/go-hello",
+          "owned_paths": [
+            "**/*.go",
+            "go.mod",
+            "go.sum"
+          ]
+        }
+      ]
+    }
+  ]
+}

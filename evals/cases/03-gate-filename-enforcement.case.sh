@@ -8,14 +8,14 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "filename-check" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-12-invalid.md"
 cp "${TARGET}/tasks/templates/tasks.template.md" "${TARGET}/tasks/tasks-12-invalid.md"
 
 set +e
-(cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null 2>&1)
+(cd "${TARGET}" && bash ./scripts/check.sh --stacks auto >/dev/null 2>&1)
 invalid_status=$?
 set -e
 
@@ -39,7 +39,7 @@ cat > "${TARGET}/tasks/tasks-1234-valid.md" <<'EOF'
 - Task DAG: `tasks/dag-1234-valid.json`
 - Task DAG Markdown: `tasks/dag-1234-valid.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/1234-valid.json`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Owner: `eval`
 - Last Updated: `2026-02-27`
 
@@ -58,7 +58,7 @@ cat > "${TARGET}/tasks/tasks-1234-valid.md" <<'EOF'
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack python` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 
 ### T-002: dependent
 - Status: `todo`
@@ -73,7 +73,7 @@ cat > "${TARGET}/tasks/tasks-1234-valid.md" <<'EOF'
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack python` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 EOF
 
 cat > "${TARGET}/tasks/dag-1234-valid.json" <<'EOF'
@@ -84,23 +84,25 @@ cat > "${TARGET}/tasks/dag-1234-valid.json" <<'EOF'
     "prd": "tasks/prd-1234-valid.md",
     "trd": "tasks/trd-1234-valid.md",
     "tasks": "tasks/tasks-1234-valid.md",
-    "gate_stack": "python"
+    "stack_registry": "tasks/stacks.json"
   },
   "nodes": [
     {
       "task_id": "T-001",
       "depends_on": [],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     },
     {
       "task_id": "T-002",
       "depends_on": ["T-001"],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     }
   ]
 }
 EOF
 
-(cd "${TARGET}" && bash ./scripts/check.sh --stack python >/dev/null)
+(cd "${TARGET}" && bash ./scripts/check.sh --stacks auto >/dev/null)
