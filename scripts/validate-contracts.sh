@@ -745,7 +745,11 @@ validate_task_dag_consistency() {
   expected_dag_rel="tasks/dag-${id}-${slug}.json"
   expected_dag_md_rel="tasks/dag-${id}-${slug}.md"
   expected_planning_artifact_rel=".blackboard/artifacts/task-planning/${id}-${slug}.json"
-  expected_stack_registry_rel="tasks/stacks.json"
+  if [[ "${STACK_REGISTRY_ABS}" == "${PROJECT_DIR}/"* ]]; then
+    expected_stack_registry_rel="${STACK_REGISTRY_ABS#${PROJECT_DIR}/}"
+  else
+    expected_stack_registry_rel="${STACK_REGISTRY_ABS}"
+  fi
   metadata_dag="$(extract_task_dag_metadata_path "${tasks_file}")"
   metadata_dag_md="$(extract_task_dag_markdown_metadata_path "${tasks_file}")"
   planning_artifact="$(extract_planning_artifact_metadata_path "${tasks_file}")"
