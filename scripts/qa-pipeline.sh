@@ -151,21 +151,37 @@ if [[ -z "${TASKS_FILE}" ]]; then
   fi
 fi
 
-qa_scenario_cmd=(
-  bash "${REPO_ROOT}/scripts/qa-generate-scenarios.sh"
-  --project-dir "${PROJECT_DIR}"
-)
 if [[ -n "${TASKS_FILE}" ]]; then
-  qa_scenario_cmd+=(--tasks-file "${TASKS_FILE}")
+  qa_scenario_cmd=(
+    bash "${REPO_ROOT}/scripts/qa-generate-scenarios.sh"
+    --project-dir "${PROJECT_DIR}"
+    --tasks-file "${TASKS_FILE}"
+  )
+  if [[ -n "${TRD_FILE}" ]]; then
+    qa_scenario_cmd+=(--trd-file "${TRD_FILE}")
+  fi
+  if [[ -n "${PRD_FILE}" ]]; then
+    qa_scenario_cmd+=(--prd-file "${PRD_FILE}")
+  fi
+  QA_SCENARIO_PATH="$("${qa_scenario_cmd[@]}")"
+else
+  QA_SCENARIO_PATH="${PROJECT_DIR}/.blackboard/artifacts/qa/scenarios-unbound.json"
+  mkdir -p "$(dirname "${QA_SCENARIO_PATH}")"
+  NOW_SCENARIO_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  cat > "${QA_SCENARIO_PATH}" <<EOF_JSON
+{
+  "id": "",
+  "slug": "",
+  "generated_at": "${NOW_SCENARIO_UTC}",
+  "tasks_path": "",
+  "trd_path": "",
+  "prd_path": "",
+  "scenario_types": ["integration", "e2e"],
+  "task_ids": [],
+  "notes": "Generated without tasks/tasks-*.md; using stack-registry-only QA mode"
+}
+EOF_JSON
 fi
-if [[ -n "${TRD_FILE}" ]]; then
-  qa_scenario_cmd+=(--trd-file "${TRD_FILE}")
-fi
-if [[ -n "${PRD_FILE}" ]]; then
-  qa_scenario_cmd+=(--prd-file "${PRD_FILE}")
-fi
-
-QA_SCENARIO_PATH="$(${qa_scenario_cmd[@]})"
 
 run_test_shell() {
   local label="$1"
