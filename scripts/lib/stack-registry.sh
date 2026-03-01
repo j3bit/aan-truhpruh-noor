@@ -39,6 +39,8 @@ stack_registry_collect_changed_files() {
       git -C "${project_dir}" diff --name-only --diff-filter=ACMRTUXBD
       git -C "${project_dir}" diff --cached --name-only --diff-filter=ACMRTUXBD
       git -C "${project_dir}" ls-files --others --exclude-standard
+      git -C "${project_dir}" diff -M --name-status --diff-filter=R | awk -F'\t' 'NF >= 3 { print $2; print $3 }'
+      git -C "${project_dir}" diff --cached -M --name-status --diff-filter=R | awk -F'\t' 'NF >= 3 { print $2; print $3 }'
     } | sed '/^$/d' | sort -u
   } > "${out_file}"
 }
