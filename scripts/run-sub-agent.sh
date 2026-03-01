@@ -8,6 +8,7 @@ TASK_ID=""
 PROJECT_DIR=""
 WORKTREE_DIR=""
 STACKS=""
+STACK_REGISTRY="tasks/stacks.json"
 PROFILE="default"
 PROFILE_FALLBACK="true"
 WORKER_BACKEND="ralph-codex"
@@ -23,6 +24,7 @@ Usage:
     --project-dir <path> \
     --worktree-dir <path> \
     --stacks <csv> \
+    [--registry <path>] \
     --result-file <path> \
     [--profile <fast|default>] \
     [--profile-fallback <true|false>] \
@@ -59,6 +61,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --stacks)
       STACKS="$2"
+      shift 2
+      ;;
+    --registry)
+      STACK_REGISTRY="$2"
       shift 2
       ;;
     --profile)
@@ -134,7 +140,7 @@ run_with_timeout() {
 }
 
 run_gate() {
-  if bash "${REPO_ROOT}/scripts/check.sh" --stacks "${STACKS}" --project-dir "${WORKTREE_DIR}"; then
+  if bash "${REPO_ROOT}/scripts/check.sh" --stacks "${STACKS}" --project-dir "${WORKTREE_DIR}" --registry "${STACK_REGISTRY}"; then
     GATE_PASSED=true
     return 0
   fi
@@ -159,7 +165,7 @@ run_ralph_backend() {
   if [[ -n "${INTEGRATION_FEEDBACK_FILE}" ]] && [[ -f "${INTEGRATION_FEEDBACK_FILE}" ]]; then
     feedback_hint="Integration conflict feedback is available at ${INTEGRATION_FEEDBACK_FILE}. Resolve it before completion."
   fi
-  prompt_text="Execute task ${TASK_ID} using process-task contract in ${WORKTREE_DIR}. Use TDD and stop only after gate pass and review pass. Use ./scripts/check.sh --stacks ${STACKS}. ${feedback_hint}"
+  prompt_text="Execute task ${TASK_ID} using process-task contract in ${WORKTREE_DIR}. Use TDD and stop only after gate pass and review pass. Use ./scripts/check.sh --stacks ${STACKS} --registry ${STACK_REGISTRY}. ${feedback_hint}"
 
   if ! command -v ralph >/dev/null 2>&1; then
     return 127
@@ -181,7 +187,7 @@ run_codex_backend() {
   if [[ -n "${INTEGRATION_FEEDBACK_FILE}" ]] && [[ -f "${INTEGRATION_FEEDBACK_FILE}" ]]; then
     feedback_hint="Integration conflict feedback is available at ${INTEGRATION_FEEDBACK_FILE}. Resolve it before completion."
   fi
-  prompt_text="Execute atomic task ${TASK_ID} in ${WORKTREE_DIR} using process-task skill. Follow TDD. Run ./scripts/check.sh --stacks ${STACKS} and finish only when complete. ${feedback_hint}"
+  prompt_text="Execute atomic task ${TASK_ID} in ${WORKTREE_DIR} using process-task skill. Follow TDD. Run ./scripts/check.sh --stacks ${STACKS} --registry ${STACK_REGISTRY} and finish only when complete. ${feedback_hint}"
 
   if ! command -v codex >/dev/null 2>&1; then
     return 127

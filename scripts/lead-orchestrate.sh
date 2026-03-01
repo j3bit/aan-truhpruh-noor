@@ -1288,6 +1288,7 @@ for ((wave_idx=0; wave_idx<${#WAVE_TASKS[@]}; wave_idx++)); do
       ORCH_PROJECT_DIR="${PROJECT_DIR}" \
       ORCH_WORKTREE_DIR="${workspace_dir}" \
       ORCH_STACKS="${task_stacks}" \
+      ORCH_STACK_REGISTRY="${DAG_STACK_REGISTRY}" \
       ORCH_PROFILE="${PROFILE_SELECTED}" \
       ORCH_PROFILE_FALLBACK="${PROFILE_FALLBACK}" \
       ORCH_WORKER_BACKEND="${WORKER_BACKEND}" \
@@ -1301,6 +1302,7 @@ for ((wave_idx=0; wave_idx<${#WAVE_TASKS[@]}; wave_idx++)); do
         --project-dir "${PROJECT_DIR}"
         --worktree-dir "${workspace_dir}"
         --stacks "${task_stacks}"
+        --registry "${DAG_STACK_REGISTRY}"
         --profile "${PROFILE_SELECTED}"
         --profile-fallback "${PROFILE_FALLBACK}"
         --worker-backend "${WORKER_BACKEND}"
