@@ -49,8 +49,9 @@ Record execution evidence in task notes:
 2. Pass/fail outcomes
 3. Relevant output artifact paths (if any)
 4. Integration artifact references when conflict directives were consumed.
-5. Contract/interface documentation update evidence when interfaces changed, or explicit `none`.
-6. Follow-up/risk capture entries, or explicit `none`.
+5. Integration feedback bundle references when conflict feedback was provided.
+6. Contract/interface documentation update evidence when interfaces changed, or explicit `none`.
+7. Follow-up/risk capture entries, or explicit `none`.
 
 ## Gate Commands
 

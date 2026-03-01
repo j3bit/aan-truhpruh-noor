@@ -43,10 +43,12 @@ cd ./my-app
 4. Plan tasks and DAG from TRD (`tasks/tasks-<4digit>-<slug>.md`, `tasks/dag-<4digit>-<slug>.json`, `tasks/dag-<4digit>-<slug>.md`)
 5. Record task planning artifact at `.blackboard/artifacts/task-planning/<4digit>-<slug>.json`
 6. Lead orchestrates wave execution from DAG
-7. Sub-agents execute one task each (`process-task`, TDD-first)
-8. Pass gate (`scripts/check.sh`) (includes contract validation)
-9. Diff-first review and merge in dependency order
-10. Run evals (`evals/run-evals.sh`)
+7. Orchestrator spawns sub-agents per wave in parallel for dependency-free tasks
+8. Sub-agents execute one task each (`process-task`, TDD-first)
+9. Run QA + static hard gate (`scripts/qa-pipeline.sh`)
+10. Pass gate (`scripts/check.sh`) (includes contract validation)
+11. Diff-first review and merge in dependency order
+12. Run evals (`evals/run-evals.sh`)
 
 Local orchestration command:
 
@@ -55,7 +57,16 @@ Local orchestration command:
   --project-dir . \
   --tasks-file tasks/tasks-<4digit>-<slug>.md \
   --dag-file tasks/dag-<4digit>-<slug>.json \
+  --max-parallel-workers 4 \
+  --worker-timeout-seconds 1800 \
+  --worker-backend ralph-codex \
   --approve
+```
+
+Standalone QA hard-gate command:
+
+```bash
+./scripts/qa-pipeline.sh --project-dir . --stack <python|node|go>
 ```
 
 ## PR Automated Review
@@ -78,6 +89,9 @@ PR automated review is handled by Codex Web GitHub integration (not GitHub Actio
 - `.agents/skills/`: baseline SOP skills (`create-prd`, `plan-tasks`, `orchestrate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
 - `.agents/skills/ideation-consultant`, `.agents/skills/trd-architect`: placeholder pipeline contracts for future skill-generated implementations
 - `.blackboard/`: runtime blackboard artifacts/events (generated at orchestration time)
+  - worker result contracts: `.orchestration/workers/<task_id>.result.json`
+  - integration feedback bundles: `.blackboard/feedback/integration/<task_id>.json`
+  - QA scenario artifacts: `.blackboard/artifacts/qa/scenarios-<id>-<slug>.json`
 - `examples/`: stack starter samples
 
 ## Core Skills Baseline
@@ -132,3 +146,4 @@ Exit codes:
 - `ERROR: <tool> not found`: install required runtime (Python/Node/Go).
 - CI failure on smoke test: run `./scripts/smoke-test.sh` locally and inspect missing files.
 - CI now runs root gate only when it detects root stack markers (`go.mod`, `package.json`, Python project markers).
+- CI chain is `quality-gate -> qa-and-static -> release-readiness` (verification-only, no production deployment step).

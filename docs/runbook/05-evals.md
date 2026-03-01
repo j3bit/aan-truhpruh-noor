@@ -46,6 +46,9 @@ Local-only mode (no trace attempt):
 - DAG/task dependency mismatch
 - missing integration artifacts per wave/task
 - strict relay violations (`QA -> ORCHESTRATION` direct route)
+- missing worker result contract fields (`.orchestration/workers/*.result.json`)
+- missing QA/static hard-gate reports
+- CI dependency chain drift (`quality-gate -> qa-and-static -> release-readiness`)
 
 ## Result Schema
 

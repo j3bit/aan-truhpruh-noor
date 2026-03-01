@@ -25,8 +25,10 @@ Generated project loop (bootstrap output):
    - `process-task`
    - optional `fix-failing-checks` (only when gate fails)
    - `pr-review` after gate passes
-8. Create one PR per task and merge in dependency order.
-9. Run `./evals/run-evals.sh` and add/adjust cases after failures.
+8. Run QA/static hard gate after orchestration:
+   - `./scripts/qa-pipeline.sh --project-dir . --stack <python|node|go>`
+9. Create one PR per task and merge in dependency order.
+10. Run `./evals/run-evals.sh` and add/adjust cases after failures.
 
 ## Required Contracts
 

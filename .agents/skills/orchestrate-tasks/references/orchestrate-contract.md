@@ -11,6 +11,9 @@
 - Plan: `.orchestration/plan.jsonl`
 - Status: `.orchestration/status.jsonl`
 - Summary: `.orchestration/summary.json`
+- Worker results: `.orchestration/workers/<task_id>.result.json`
+- QA report: `.orchestration/reports/qa-report.json`
+- Static review report: `.orchestration/reports/static-review.json`
 
 ## Required Blackboard Structure
 
@@ -19,6 +22,8 @@
 - `.blackboard/integration/waves/`
 - `.blackboard/integration/tasks/`
 - `.blackboard/feedback/qa/`
+- `.blackboard/feedback/integration/`
+- `.blackboard/artifacts/qa/`
 - `.blackboard/jobs/`
 - `.blackboard/state/`
 

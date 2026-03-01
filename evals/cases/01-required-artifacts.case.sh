@@ -7,6 +7,10 @@ required_paths=(
   "AGENTS.md"
   "scripts/check.sh"
   "scripts/lead-orchestrate.sh"
+  "scripts/run-sub-agent.sh"
+  "scripts/qa-generate-scenarios.sh"
+  "scripts/qa-pipeline.sh"
+  "scripts/static-review.sh"
   "scripts/validate-contracts.sh"
   "scripts/lib/blackboard.sh"
   "scripts/lib/stage-router.sh"
@@ -35,8 +39,12 @@ required_paths=(
   "evals/cases/13-integration-artifact-generation.case.sh"
   "evals/cases/14-qa-strict-relay.case.sh"
   "evals/cases/15-fast-profile-fallback.case.sh"
+  "evals/cases/20-worker-result-contract.case.sh"
+  "evals/cases/21-qa-static-hard-gate.case.sh"
+  "evals/cases/22-ci-qa-release-readiness.case.sh"
   "docs/runbook/01-workflow.md"
   "docs/runbook/03-multi-agent.md"
+  "docs/runbook/04-ralph.md"
   "docs/runbook/05-evals.md"
 )
 
