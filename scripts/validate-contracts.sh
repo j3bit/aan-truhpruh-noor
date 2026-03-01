@@ -148,6 +148,7 @@ elif ! stack_registry_validate "${STACK_REGISTRY_ABS}" "${PROJECT_DIR}"; then
 fi
 
 CHANGED_FILES_FILE="$(mktemp)"
+FORCE_FULL_SCAN=0
 cleanup() {
   rm -f "${CHANGED_FILES_FILE}"
 }
@@ -157,11 +158,23 @@ if [[ "${CHANGED_ONLY}" -eq 1 ]] && command -v git >/dev/null 2>&1; then
   if git -C "${PROJECT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     {
       {
-        git -C "${PROJECT_DIR}" diff --name-only --diff-filter=ACMRTUXB
-        git -C "${PROJECT_DIR}" diff --cached --name-only --diff-filter=ACMRTUXB
+        git -C "${PROJECT_DIR}" diff --name-only --diff-filter=ACMRTUXBD
+        git -C "${PROJECT_DIR}" diff --cached --name-only --diff-filter=ACMRTUXBD
         git -C "${PROJECT_DIR}" ls-files --others --exclude-standard
+        git -C "${PROJECT_DIR}" diff -M --name-status --diff-filter=R | awk -F'\t' 'NF >= 3 { print $2; print $3 }'
+        git -C "${PROJECT_DIR}" diff --cached -M --name-status --diff-filter=R | awk -F'\t' 'NF >= 3 { print $2; print $3 }'
       } | sed '/^$/d' | sort -u
     } > "${CHANGED_FILES_FILE}"
+
+    if [[ -s "${CHANGED_FILES_FILE}" ]]; then
+      while IFS= read -r rel_path; do
+        [[ -n "${rel_path}" ]] || continue
+        if [[ ! -e "${PROJECT_DIR}/${rel_path}" ]]; then
+          FORCE_FULL_SCAN=1
+          break
+        fi
+      done < "${CHANGED_FILES_FILE}"
+    fi
   else
     echo "[contracts] INFO: --changed-only requested but project is not in a git worktree; running full checks"
   fi
@@ -170,6 +183,9 @@ fi
 should_check_file() {
   local rel_path="$1"
   if [[ "${CHANGED_ONLY}" -eq 0 ]]; then
+    return 0
+  fi
+  if [[ "${FORCE_FULL_SCAN}" -eq 1 ]]; then
     return 0
   fi
   if [[ ! -s "${CHANGED_FILES_FILE}" ]]; then

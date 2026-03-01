@@ -189,6 +189,34 @@ stack_registry_project_rows() {
   ' "${registry_abs}" "${stack_name}"
 }
 
+stack_registry_project_owned_rows() {
+  local registry_abs="$1"
+  local stack_name="$2"
+
+  perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    my ($path, $name) = @ARGV;
+    local $/;
+    open my $fh, "<", $path or die;
+    my $raw = <$fh>;
+    close $fh;
+    my $obj = decode_json($raw);
+
+    for my $stack (@{$obj->{stacks}}) {
+      next unless $stack->{name} eq $name;
+      for my $project (@{$stack->{projects}}) {
+        my $project_path = $project->{path};
+        for my $owned (@{$project->{owned_paths}}) {
+          print $project_path, "\t", $owned, "\n";
+        }
+      }
+      exit 0;
+    }
+    exit 1;
+  ' "${registry_abs}" "${stack_name}"
+}
+
 stack_registry_glob_to_regex() {
   local glob="$1"
   local regex="^"
@@ -256,12 +284,31 @@ stack_registry_path_matches_glob() {
   [[ "${path_value}" =~ ${regex} ]]
 }
 
+stack_registry_expand_brace_globs() {
+  local pattern="$1"
+  local prefix body suffix part
+
+  if [[ "${pattern}" =~ ^([^{}]*)\{([^{}]+)\}(.*)$ ]]; then
+    prefix="${BASH_REMATCH[1]}"
+    body="${BASH_REMATCH[2]}"
+    suffix="${BASH_REMATCH[3]}"
+
+    IFS=',' read -r -a __parts <<< "${body}"
+    for part in "${__parts[@]}"; do
+      stack_registry_expand_brace_globs "${prefix}${part}${suffix}"
+    done
+    return 0
+  fi
+
+  printf '%s\n' "${pattern}"
+}
+
 stack_registry_select_from_changed() {
   local registry_abs="$1"
   local changed_files_file="$2"
   local selected_tmp
-  local stack_name project_path owned_csv owned_list
-  local owned_path full_glob changed_file
+  local stack_name project_path
+  local owned_path expanded_owned_path full_glob changed_file
   local stack_matched
 
   selected_tmp="$(mktemp)"
@@ -270,22 +317,17 @@ stack_registry_select_from_changed() {
     [[ -n "${stack_name}" ]] || continue
     stack_matched=0
 
-    while IFS='|' read -r project_path owned_csv; do
+    while IFS=$'\t' read -r project_path owned_path; do
       [[ -n "${project_path}" ]] || continue
-      owned_list="${owned_csv},"
-      while [[ -n "${owned_list}" ]]; do
-        owned_path="${owned_list%%,*}"
-        if [[ "${owned_list}" == *,* ]]; then
-          owned_list="${owned_list#*,}"
-        else
-          owned_list=""
-        fi
-        [[ -n "${owned_path}" ]] || continue
+      [[ -n "${owned_path}" ]] || continue
+
+      while IFS= read -r expanded_owned_path; do
+        [[ -n "${expanded_owned_path}" ]] || continue
 
         if [[ "${project_path}" == "." ]]; then
-          full_glob="${owned_path}"
+          full_glob="${expanded_owned_path}"
         else
-          full_glob="${project_path%/}/${owned_path}"
+          full_glob="${project_path%/}/${expanded_owned_path}"
         fi
         full_glob="${full_glob#./}"
 
@@ -301,12 +343,12 @@ stack_registry_select_from_changed() {
         if [[ "${stack_matched}" -eq 1 ]]; then
           break
         fi
-      done
+      done < <(stack_registry_expand_brace_globs "${owned_path}")
 
       if [[ "${stack_matched}" -eq 1 ]]; then
         break
       fi
-    done < <(stack_registry_project_rows "${registry_abs}" "${stack_name}")
+    done < <(stack_registry_project_owned_rows "${registry_abs}" "${stack_name}")
 
     if [[ "${stack_matched}" -eq 1 ]]; then
       printf '%s\n' "${stack_name}" >> "${selected_tmp}"
