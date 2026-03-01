@@ -36,8 +36,8 @@ stack_registry_collect_changed_files() {
 
   {
     {
-      git -C "${project_dir}" diff --name-only --diff-filter=ACMRTUXB
-      git -C "${project_dir}" diff --cached --name-only --diff-filter=ACMRTUXB
+      git -C "${project_dir}" diff --name-only --diff-filter=ACMRTUXBD
+      git -C "${project_dir}" diff --cached --name-only --diff-filter=ACMRTUXBD
       git -C "${project_dir}" ls-files --others --exclude-standard
     } | sed '/^$/d' | sort -u
   } > "${out_file}"
