@@ -9,6 +9,24 @@ assert_file() {
   [[ -f "$path" ]] || { echo "[smoke] ERROR: missing file: $path" >&2; exit 1; }
 }
 
+stack_runtime_ready() {
+  local stack="$1"
+  case "${stack}" in
+    python)
+      command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1
+      ;;
+    node)
+      command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1
+      ;;
+    go)
+      command -v go >/dev/null 2>&1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
 run_bootstrap_check() {
   local stacks="$1"
   local root_dir="$2"
@@ -54,7 +72,28 @@ run_bootstrap_check() {
   assert_file "${target}/evals/lib/parse-trace.sh"
 
   if command -v bash >/dev/null 2>&1; then
-    (cd "${target}" && bash ./scripts/check.sh --stacks auto)
+    runnable_stacks=()
+    missing_stacks=()
+    while IFS= read -r stack_name; do
+      stack_name="$(printf '%s' "${stack_name}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+      [[ -n "${stack_name}" ]] || continue
+      if stack_runtime_ready "${stack_name}"; then
+        runnable_stacks+=("${stack_name}")
+      else
+        missing_stacks+=("${stack_name}")
+      fi
+    done < <(printf '%s\n' "${stacks}" | tr ',' '\n')
+
+    if [[ "${#missing_stacks[@]}" -gt 0 ]]; then
+      echo "[smoke] INFO: skipping unavailable stack toolchains for ${target}: $(printf '%s\n' "${missing_stacks[@]}" | paste -sd ',' -)"
+    fi
+
+    if [[ "${#runnable_stacks[@]}" -eq 0 ]]; then
+      echo "[smoke] INFO: no runnable stacks for ${target}; skipping gate run"
+    else
+      runnable_csv="$(printf '%s\n' "${runnable_stacks[@]}" | paste -sd ',' -)"
+      (cd "${target}" && bash ./scripts/check.sh --stacks "${runnable_csv}")
+    fi
   fi
 }
 
