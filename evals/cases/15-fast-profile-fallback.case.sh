@@ -6,6 +6,7 @@ TMP_DIR="$(mktemp -d)"
 TARGET="${TMP_DIR}/profile-fallback"
 OUT_DIR="${TMP_DIR}/orchestration-out"
 TMP_HOME="${TMP_DIR}/home-no-fast"
+WORKER_CMD_FILE="${TMP_DIR}/worker-cmd.sh"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
 mkdir -p "${TMP_HOME}"
@@ -91,7 +92,25 @@ cat > "${TARGET}/tasks/dag-1234-profile-fallback.json" <<'EOF'
 }
 EOF
 
-HOME="${TMP_HOME}" bash "${TARGET}/scripts/lead-orchestrate.sh" \
+cat > "${WORKER_CMD_FILE}" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+cat > "${ORCH_RESULT_FILE}" <<EOF_JSON
+{
+  "task_id": "${ORCH_TASK_ID}",
+  "exit_code": 0,
+  "gate_passed": true,
+  "pr_review_passed": true,
+  "profile": "${ORCH_PROFILE:-default}",
+  "profile_fallback": ${ORCH_PROFILE_FALLBACK:-true},
+  "duration_sec": 1,
+  "worker_backend": "custom-command"
+}
+EOF_JSON
+EOF
+chmod +x "${WORKER_CMD_FILE}"
+
+HOME="${TMP_HOME}" ORCH_WORKER_CMD="${WORKER_CMD_FILE}" bash "${TARGET}/scripts/lead-orchestrate.sh" \
   --project-dir "${TARGET}" \
   --tasks-file "${TARGET}/tasks/tasks-1234-profile-fallback.md" \
   --dag-file "${TARGET}/tasks/dag-1234-profile-fallback.json" \

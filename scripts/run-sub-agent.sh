@@ -226,19 +226,37 @@ if [[ -n "${ORCH_WORKER_CMD:-}" ]]; then
     SUCCESS=false
   fi
 else
+  backend_ran=false
+  backend_exit_code=1
+
   if [[ "${WORKER_BACKEND}" == "ralph-codex" ]]; then
     if run_ralph_backend; then
       ACTUAL_BACKEND="ralph-codex"
+      backend_ran=true
     else
+      backend_exit_code=$?
       ACTUAL_BACKEND="codex-exec"
-      run_codex_backend || true
+      if run_codex_backend; then
+        backend_ran=true
+      else
+        backend_exit_code=$?
+      fi
     fi
   else
     ACTUAL_BACKEND="codex-exec"
-    run_codex_backend || true
+    if run_codex_backend; then
+      backend_ran=true
+    else
+      backend_exit_code=$?
+    fi
   fi
 
-  attempt_gate_and_review || true
+  if [[ "${backend_ran}" == "true" ]]; then
+    attempt_gate_and_review || true
+  else
+    SUCCESS=false
+    EXIT_CODE="${backend_exit_code}"
+  fi
 fi
 
 if [[ "${SUCCESS}" == "true" ]]; then

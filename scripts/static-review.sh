@@ -75,13 +75,31 @@ search_pattern_stack_files() {
   if [[ "${HAS_RG}" -eq 1 ]]; then
     case "${STACK}" in
       python)
-        rg -n --glob '*.py' "${pattern}" "${PROJECT_DIR}" >> "${out_file}" || true
+        rg -n --hidden \
+          --glob '!.git/**' \
+          --glob '!.orchestration/**' \
+          --glob '!.blackboard/**' \
+          --glob '!node_modules/**' \
+          --glob '*.py' \
+          "${pattern}" "${PROJECT_DIR}" >> "${out_file}" || true
         ;;
       node)
-        rg -n --glob '*.{js,mjs,cjs,ts,tsx}' "${pattern}" "${PROJECT_DIR}" >> "${out_file}" || true
+        rg -n --hidden \
+          --glob '!.git/**' \
+          --glob '!.orchestration/**' \
+          --glob '!.blackboard/**' \
+          --glob '!node_modules/**' \
+          --glob '*.{js,mjs,cjs,ts,tsx}' \
+          "${pattern}" "${PROJECT_DIR}" >> "${out_file}" || true
         ;;
       go)
-        rg -n --glob '*.go' "${pattern}" "${PROJECT_DIR}" >> "${out_file}" || true
+        rg -n --hidden \
+          --glob '!.git/**' \
+          --glob '!.orchestration/**' \
+          --glob '!.blackboard/**' \
+          --glob '!node_modules/**' \
+          --glob '*.go' \
+          "${pattern}" "${PROJECT_DIR}" >> "${out_file}" || true
         ;;
     esac
     return 0

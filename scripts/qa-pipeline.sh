@@ -181,17 +181,27 @@ case "${STACK}" in
     fi
     ;;
   go)
-    integration_targets="$(find . -type f -name '*integration*_test.go' -not -path './.git/*' | sort | tr '\n' ' ')"
-    e2e_targets="$(find . -type f -name '*e2e*_test.go' -not -path './.git/*' | sort | tr '\n' ' ')"
+    integration_packages="$(find . -type f -name '*integration*_test.go' -not -path './.git/*' | awk '{
+      dir=$0
+      sub(/\/[^\/]+$/, "", dir)
+      if (dir == "") dir="."
+      print dir
+    }' | sort -u | tr '\n' ' ')"
+    e2e_packages="$(find . -type f -name '*e2e*_test.go' -not -path './.git/*' | awk '{
+      dir=$0
+      sub(/\/[^\/]+$/, "", dir)
+      if (dir == "") dir="."
+      print dir
+    }' | sort -u | tr '\n' ' ')"
 
-    if [[ -n "${integration_targets}" ]]; then
-      run_test_shell "integration-tests" "go test ${integration_targets}" || true
+    if [[ -n "${integration_packages}" ]]; then
+      run_test_shell "integration-tests" "go test ${integration_packages}" || true
     else
       echo "integration-tests :: skipped(no matching files)" >> "${QA_COMMANDS_FILE}"
     fi
 
-    if [[ -n "${e2e_targets}" ]]; then
-      run_test_shell "e2e-tests" "go test ${e2e_targets}" || true
+    if [[ -n "${e2e_packages}" ]]; then
+      run_test_shell "e2e-tests" "go test ${e2e_packages}" || true
     else
       echo "e2e-tests :: skipped(no matching files)" >> "${QA_COMMANDS_FILE}"
     fi

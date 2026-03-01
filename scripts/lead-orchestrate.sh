@@ -741,6 +741,16 @@ parse_worker_result() {
   perl -MJSON::PP -e '
     use strict;
     use warnings;
+    sub strict_bool {
+      my ($value) = @_;
+      if (ref($value)) {
+        return $value ? 1 : 0;
+      }
+      return 0 unless defined $value;
+      return 1 if $value =~ /\A(?:1|true)\z/i;
+      return 0 if $value =~ /\A(?:0|false)?\z/i;
+      return 0;
+    }
     my ($path) = @ARGV;
     local $/;
     open my $fh, "<", $path or die "open_failed";
@@ -749,10 +759,10 @@ parse_worker_result() {
     my $obj = decode_json($raw);
     my $task = defined $obj->{task_id} ? $obj->{task_id} : "";
     my $exit = defined $obj->{exit_code} ? $obj->{exit_code} : 1;
-    my $gate = ($obj->{gate_passed}) ? "true" : "false";
-    my $review = ($obj->{pr_review_passed}) ? "true" : "false";
+    my $gate = strict_bool($obj->{gate_passed}) ? "true" : "false";
+    my $review = strict_bool($obj->{pr_review_passed}) ? "true" : "false";
     my $profile = defined $obj->{profile} ? $obj->{profile} : "default";
-    my $fallback = ($obj->{profile_fallback}) ? "true" : "false";
+    my $fallback = strict_bool($obj->{profile_fallback}) ? "true" : "false";
     my $duration = defined $obj->{duration_sec} ? $obj->{duration_sec} : 0;
     my $backend = defined $obj->{worker_backend} ? $obj->{worker_backend} : "unknown";
     print join("|", $task, $exit, $gate, $review, $profile, $fallback, $duration, $backend);
