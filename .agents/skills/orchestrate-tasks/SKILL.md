@@ -33,6 +33,9 @@ Primary orchestration outputs:
 - `.orchestration/plan.jsonl`
 - `.orchestration/status.jsonl`
 - `.orchestration/summary.json`
+- `.orchestration/workers/<task_id>.result.json`
+- `.orchestration/reports/qa-report.json`
+- `.orchestration/reports/static-review.json`
 
 Blackboard outputs:
 
@@ -42,6 +45,8 @@ Blackboard outputs:
 - `.blackboard/integration/waves/wave-<n>.json`
 - `.blackboard/integration/tasks/<task_id>.json`
 - `.blackboard/feedback/qa/*.json`
+- `.blackboard/feedback/integration/<task_id>.json`
+- `.blackboard/artifacts/qa/scenarios-<id>-<slug>.json`
 - `.blackboard/state/`
 
 Reference contract details from `references/orchestrate-contract.md`.
@@ -54,7 +59,9 @@ Reference contract details from `references/orchestrate-contract.md`.
 4. For each wave:
    - write wave integration artifact
    - dispatch per-task job manifests (`preferred_profile=fast`, `fallback_allowed=true`)
-   - run dependency-safe execution records and gate checks
+   - run dependency-safe workers in parallel when DAG allows
+   - parse worker result contracts and update status
+   - apply integration feedback loop on conflicts
 5. Emit stage-routed events only through adjacent stages.
 6. If QA failure bundle exists:
    - allow `QA -> IMPLEMENTATION` event

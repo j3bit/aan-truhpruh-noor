@@ -38,10 +38,12 @@ blackboard_init() {
 
   mkdir -p \
     "${bb_root}/artifacts" \
+    "${bb_root}/artifacts/qa" \
     "${bb_root}/events" \
     "${bb_root}/integration/waves" \
     "${bb_root}/integration/tasks" \
     "${bb_root}/feedback/qa" \
+    "${bb_root}/feedback/integration" \
     "${bb_root}/jobs" \
     "${bb_root}/state"
 

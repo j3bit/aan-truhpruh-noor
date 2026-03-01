@@ -75,6 +75,9 @@ Coordinator and sub-agents must report status records with:
 - `wave`
 - `profile`
 - `profile_fallback`
+- `worker_backend` (optional extension)
+- `duration_sec` (optional extension)
+- `result_file` (optional extension)
 
 Stored at: `.orchestration/status.jsonl` (or `--out-dir` override).
 
@@ -96,6 +99,24 @@ Example:
 }
 ```
 
+## Runtime Artifacts
+
+Expected runtime artifacts for orchestration + QA integration:
+
+- `.orchestration/plan.jsonl`
+- `.orchestration/status.jsonl`
+- `.orchestration/summary.json`
+- `.orchestration/workers/<task_id>.result.json`
+- `.orchestration/reports/qa-report.json`
+- `.orchestration/reports/static-review.json`
+- `.blackboard/events/events.jsonl`
+- `.blackboard/jobs/<task_id>.json`
+- `.blackboard/integration/waves/wave-<n>.json`
+- `.blackboard/integration/tasks/<task_id>.json`
+- `.blackboard/artifacts/qa/scenarios-<id>-<slug>.json`
+- `.blackboard/feedback/integration/<task_id>.json`
+- `.blackboard/feedback/qa/*.json`
+
 ## Orchestration Rules
 
 1. Sub-agent scope is one task id per run.
@@ -107,6 +128,8 @@ Example:
 7. Actor events must use adjacent stage routes only.
 8. Integration directives and conflicts are persisted on blackboard artifacts.
 9. QA feedback relay must be `QA -> IMPLEMENTATION -> ORCHESTRATION`.
+10. Worker result JSON is the source for status transition updates.
+11. Existing integration feedback bundles are injected into subsequent worker runs for the same task.
 
 ## Local E2E Command
 
@@ -115,6 +138,9 @@ Example:
   --project-dir . \
   --tasks-file tasks/tasks-<4digit>-<slug>.md \
   --dag-file tasks/dag-<4digit>-<slug>.json \
+  --max-parallel-workers 4 \
+  --worker-timeout-seconds 1800 \
+  --worker-backend ralph-codex \
   --approve
 ```
 

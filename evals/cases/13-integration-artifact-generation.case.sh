@@ -5,6 +5,7 @@ ROOT="${EVAL_REPO_ROOT:-$(pwd)}"
 TMP_DIR="$(mktemp -d)"
 TARGET="${TMP_DIR}/integration-artifacts"
 OUT_DIR="${TMP_DIR}/orchestration-out"
+WORKER_CMD_FILE="${TMP_DIR}/worker-cmd.sh"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
@@ -88,6 +89,25 @@ cat > "${TARGET}/tasks/dag-1234-integration-artifacts.json" <<'EOF'
 }
 EOF
 
+cat > "${WORKER_CMD_FILE}" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+cat > "${ORCH_RESULT_FILE}" <<EOF_JSON
+{
+  "task_id": "${ORCH_TASK_ID}",
+  "exit_code": 0,
+  "gate_passed": true,
+  "pr_review_passed": true,
+  "profile": "${ORCH_PROFILE:-default}",
+  "profile_fallback": false,
+  "duration_sec": 1,
+  "worker_backend": "custom-command"
+}
+EOF_JSON
+EOF
+chmod +x "${WORKER_CMD_FILE}"
+
+ORCH_WORKER_CMD="${WORKER_CMD_FILE}" \
 bash "${TARGET}/scripts/lead-orchestrate.sh" \
   --project-dir "${TARGET}" \
   --tasks-file "${TARGET}/tasks/tasks-1234-integration-artifacts.md" \

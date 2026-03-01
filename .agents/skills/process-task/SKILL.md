@@ -30,7 +30,8 @@ Collect or infer these inputs before writing:
 5. DAG path (`tasks/dag-<4digit>-<slug>.json`).
 6. Gate stack (`python|node|go`).
 7. Optional integration artifact path (`.blackboard/integration/tasks/<task_id>.json`).
-8. Optional user constraints (timebox, exclusions, risk limits).
+8. Optional integration feedback bundle (`.blackboard/feedback/integration/<task_id>.json`).
+9. Optional user constraints (timebox, exclusions, risk limits).
 
 If task file path is not explicitly provided, inspect `tasks/tasks-*.md` and resolve the file that contains the target task id.
 If task id resolution returns zero matches, do not mutate any task status; report `task id not found` as a request-level blocker and stop.
@@ -67,6 +68,7 @@ Reference contract details from `references/process-task-contract.md`.
    - paired TRD
    - target task block (Dependencies, Acceptance Criteria, Test Plan, Done Definition)
    - integration artifact for this task (if present)
+   - integration feedback bundle for this task (if present)
 3. Validate readiness:
    - ensure dependencies are complete
    - if blocked, set status `blocked`, record blocker in notes, and stop

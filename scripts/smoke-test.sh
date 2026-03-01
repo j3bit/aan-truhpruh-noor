@@ -30,6 +30,10 @@ run_bootstrap_check() {
   assert_file "${target}/tasks/contracts/blackboard/task-planning-output.schema.json"
   assert_file "${target}/scripts/check.sh"
   assert_file "${target}/scripts/lead-orchestrate.sh"
+  assert_file "${target}/scripts/run-sub-agent.sh"
+  assert_file "${target}/scripts/qa-generate-scenarios.sh"
+  assert_file "${target}/scripts/qa-pipeline.sh"
+  assert_file "${target}/scripts/static-review.sh"
   assert_file "${target}/scripts/validate-contracts.sh"
   assert_file "${target}/scripts/lib/blackboard.sh"
   assert_file "${target}/scripts/lib/stage-router.sh"
@@ -63,7 +67,11 @@ run_bootstrap_check() {
   assert_file "${target}/evals/cases/17-planning-pipeline-placeholder-contract.case.sh"
   assert_file "${target}/evals/cases/18-plan-tasks-trd-primary-contract.case.sh"
   assert_file "${target}/evals/cases/19-task-dag-artifact-metadata-contract.case.sh"
+  assert_file "${target}/evals/cases/20-worker-result-contract.case.sh"
+  assert_file "${target}/evals/cases/21-qa-static-hard-gate.case.sh"
+  assert_file "${target}/evals/cases/22-ci-qa-release-readiness.case.sh"
   assert_file "${target}/docs/runbook/03-multi-agent.md"
+  assert_file "${target}/docs/runbook/04-ralph.md"
 
   if [[ "${stack}" == "python" ]]; then
     if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then

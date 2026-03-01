@@ -18,7 +18,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install Python lint tooling
         run: |
@@ -28,12 +28,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: "1.22"
 
       - name: Mark scripts executable
         run: |
@@ -66,3 +66,109 @@ jobs:
       - name: Run evals (local-only)
         if: ${{ github.event_name == 'push' }}
         run: ./evals/run-evals.sh --trace-mode local-only
+
+  qa-and-static:
+    needs: quality-gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Mark scripts executable
+        run: |
+          find scripts templates/stacks evals -type f -name '*.sh' -exec chmod +x {} +
+
+      - name: Detect root stack
+        id: detect-stack
+        run: |
+          if [[ -f go.mod ]]; then
+            echo "stack=go" >> "${GITHUB_OUTPUT}"
+          elif [[ -f package.json ]]; then
+            echo "stack=node" >> "${GITHUB_OUTPUT}"
+          elif [[ -f pyproject.toml || -f requirements.txt || -f setup.py ]] || find . -maxdepth 1 -type f -name '*.py' -print -quit | grep -q .; then
+            echo "stack=python" >> "${GITHUB_OUTPUT}"
+          else
+            echo "stack=none" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Run QA + Static Hard Gate
+        if: ${{ steps.detect-stack.outputs.stack != 'none' }}
+        run: |
+          ./scripts/qa-pipeline.sh --project-dir . --stack "${{ steps.detect-stack.outputs.stack }}"
+
+      - name: Skip QA when no stack marker exists
+        if: ${{ steps.detect-stack.outputs.stack == 'none' }}
+        run: echo "[ci] no root stack marker found; skipping qa-and-static"
+
+      - name: Upload QA and static reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-and-static-reports
+          if-no-files-found: warn
+          path: |
+            .orchestration/reports/**
+            .blackboard/artifacts/qa/**
+            .blackboard/feedback/qa/**
+            .blackboard/feedback/integration/**
+
+  release-readiness:
+    needs: qa-and-static
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download QA artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: qa-and-static-reports
+          path: .orchestration/artifacts/qa-and-static
+        continue-on-error: true
+
+      - name: Build release readiness report
+        run: |
+          mkdir -p .orchestration/reports
+          ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          qa_report="$(find .orchestration/artifacts/qa-and-static -type f -name 'qa-report.json' | head -n 1 || true)"
+          static_report="$(find .orchestration/artifacts/qa-and-static -type f -name 'static-review.json' | head -n 1 || true)"
+          if [[ -n "${qa_report}" && -n "${static_report}" ]]; then
+            status="ready_for_manual_release"
+            note="qa_and_static_reports_present"
+          else
+            status="skipped_no_stack_or_reports"
+            note="qa_and_static_reports_missing"
+          fi
+          cat > .orchestration/reports/release-readiness.json <<EOF_JSON
+          {
+            "generated_at": "${ts}",
+            "status": "${status}",
+            "note": "${note}",
+            "qa_report_path": "${qa_report}",
+            "static_review_report_path": "${static_report}"
+          }
+          EOF_JSON
+
+      - name: Upload release readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-readiness-report
+          if-no-files-found: error
+          path: .orchestration/reports/release-readiness.json
