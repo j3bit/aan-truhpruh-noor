@@ -56,14 +56,7 @@ FAILED=0
 
 declare -a CHANGED_FILES=()
 if [[ "${CHANGED_ONLY}" -eq 1 ]] && command -v git >/dev/null 2>&1; then
-  if [[ -n "${STACK_CHECK_CHANGED_FILES_FILE:-}" ]] && [[ -f "${STACK_CHECK_CHANGED_FILES_FILE}" ]]; then
-    while IFS= read -r file; do
-      [[ -n "${file}" ]] || continue
-      [[ "${file}" == *.py ]] || continue
-      [[ -f "${file}" ]] || continue
-      CHANGED_FILES+=("${file}")
-    done < "${STACK_CHECK_CHANGED_FILES_FILE}"
-  elif git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     while IFS= read -r file; do
       [[ -n "${file}" ]] && CHANGED_FILES+=("${file}")
     done < <({
