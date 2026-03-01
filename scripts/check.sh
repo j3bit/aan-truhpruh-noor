@@ -184,6 +184,10 @@ if [[ ! -s "${STACK_SELECTION_FILE}" ]]; then
   exit 2
 fi
 
+if [[ "${CHANGED_ONLY}" -eq 1 ]]; then
+  stack_registry_collect_changed_files "${PROJECT_DIR}" "${CHANGED_FILES_FILE}"
+fi
+
 echo "[check] selected_stacks=$(paste -sd ',' "${STACK_SELECTION_FILE}")"
 
 OVERALL_FAIL=0
@@ -223,11 +227,43 @@ while IFS= read -r STACK_NAME; do
     echo "[check] RUN: stack=${STACK_NAME} adapter=${ADAPTER_ABS} project=${TARGET_PROJECT_DIR}"
     set +e
     ADAPTER_CMD=(bash "${ADAPTER_ABS}" --project-dir "${TARGET_PROJECT_DIR}")
+    PROJECT_CHANGED_FILE=""
     if [[ "${CHANGED_ONLY}" -eq 1 ]]; then
       ADAPTER_CMD+=(--changed-only)
+      PROJECT_CHANGED_FILE="$(mktemp)"
+
+      PROJECT_PREFIX="${PROJECT_PATH#./}"
+      if [[ "${PROJECT_PREFIX}" == /* ]]; then
+        if [[ "${PROJECT_PREFIX}" == "${PROJECT_DIR}"/* ]]; then
+          PROJECT_PREFIX="${PROJECT_PREFIX#${PROJECT_DIR}/}"
+        else
+          PROJECT_PREFIX=""
+        fi
+      fi
+
+      if [[ -z "${PROJECT_PREFIX}" || "${PROJECT_PREFIX}" == "." ]]; then
+        cat "${CHANGED_FILES_FILE}" > "${PROJECT_CHANGED_FILE}"
+      else
+        awk -v prefix="${PROJECT_PREFIX%/}/" '
+          index($0, prefix) == 1 {
+            rel = substr($0, length(prefix) + 1);
+            if (rel != "") {
+              print rel;
+            }
+          }
+        ' "${CHANGED_FILES_FILE}" > "${PROJECT_CHANGED_FILE}"
+      fi
     fi
-    "${ADAPTER_CMD[@]}"
+
+    if [[ -n "${PROJECT_CHANGED_FILE}" ]]; then
+      STACK_CHECK_CHANGED_FILES_FILE="${PROJECT_CHANGED_FILE}" "${ADAPTER_CMD[@]}"
+    else
+      "${ADAPTER_CMD[@]}"
+    fi
     RESULT=$?
+    if [[ -n "${PROJECT_CHANGED_FILE}" ]]; then
+      rm -f "${PROJECT_CHANGED_FILE}"
+    fi
     set -e
 
     if [[ "${RESULT}" -eq 0 ]]; then
