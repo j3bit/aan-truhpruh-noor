@@ -1,5 +1,5 @@
 def main():
-    print("Hello from newlight-base!")
+    print("Hello from Semanticizer!")
 
 
 if __name__ == "__main__":
