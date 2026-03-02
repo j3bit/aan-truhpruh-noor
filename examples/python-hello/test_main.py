@@ -10,7 +10,7 @@ class MainTest(unittest.TestCase):
         buffer = io.StringIO()
         with redirect_stdout(buffer):
             main()
-        self.assertIn("Hello from Semanticizer!", buffer.getvalue())
+        self.assertIn("Hello world!", buffer.getvalue())
 
 
 if __name__ == "__main__":
