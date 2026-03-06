@@ -9,10 +9,10 @@ This template includes the baseline SOP skill set:
 - `fix-failing-checks`
 - `pr-review`
 
-Pipeline placeholder skills for future integration:
+Additional skills in the standard delivery flow:
 
 - `ideation-consultant`
-- `trd-architect`
+- `create-trd`
 
 Required file pattern:
 

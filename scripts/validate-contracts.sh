@@ -60,8 +60,8 @@ REQUIRED_SKILL_FILES=(
   ".agents/skills/pr-review/SKILL.md"
   ".agents/skills/ideation-consultant/SKILL.md"
   ".agents/skills/ideation-consultant/references/ideation-contract.md"
-  ".agents/skills/trd-architect/SKILL.md"
-  ".agents/skills/trd-architect/references/trd-contract.md"
+  ".agents/skills/create-trd/SKILL.md"
+  ".agents/skills/create-trd/references/trd-contract.md"
 )
 REQUIRED_TEMPLATE_FILES=(
   ".codex/config.toml"
