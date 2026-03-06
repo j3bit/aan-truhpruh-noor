@@ -11,11 +11,10 @@ This repository includes six baseline skills as part of the default template con
 - `fix-failing-checks`
 - `pr-review`
 
-## Planning Pipeline Placeholders
+## Planning Pipeline Skills
 
-The template also includes placeholder integration contracts for future skill-generated implementations:
+The template includes planning-pipeline skills for concept and architecture stages:
 
-- `ideation-consultant`
 - `trd-architect`
 
 ## Integration Point
@@ -23,12 +22,12 @@ The template also includes placeholder integration contracts for future skill-ge
 - Baseline skills live under `.agents/skills/`.
 - Keep each skill self-contained (`SKILL.md`, optional scripts/assets/references).
 - Additional skills are optional extensions and must not weaken contract or gate behavior.
-- Placeholder ideation/TRD skills must keep outputs schema-compatible with:
+- Planning pipeline skills must keep outputs schema-compatible with:
   - `tasks/contracts/blackboard/ideation-output.schema.json`
   - `tasks/contracts/blackboard/trd-output.schema.json`
   - `tasks/contracts/blackboard/task-planning-output.schema.json`
 - Recommended execution chain per delivery slice:
-  - `ideation-consultant` (placeholder stage or implementation replacement)
+  - `develop-concept`
   - `create-prd`
   - `trd-architect` (placeholder stage or implementation replacement)
   - `plan-tasks` (TRD primary, PRD constraints-only)
@@ -40,8 +39,8 @@ The template also includes placeholder integration contracts for future skill-ge
 ## Validation Checklist
 
 1. Baseline skill files exist at `.agents/skills/<skill-name>/SKILL.md`.
-2. Placeholder skill files exist at:
-   - `.agents/skills/ideation-consultant/SKILL.md`
+2. Planning pipeline skill files exist at:
+   - `.agents/skills/develop-concept/SKILL.md`
    - `.agents/skills/trd-architect/SKILL.md`
 3. Skill output paths match repository contracts (`tasks/`, `.blackboard/`, `scripts/check.sh`).
 4. Skill instructions do not bypass gate rules.

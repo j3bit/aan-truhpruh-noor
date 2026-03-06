@@ -58,8 +58,8 @@ REQUIRED_SKILL_FILES=(
   ".agents/skills/process-task/SKILL.md"
   ".agents/skills/fix-failing-checks/SKILL.md"
   ".agents/skills/pr-review/SKILL.md"
-  ".agents/skills/ideation-consultant/SKILL.md"
-  ".agents/skills/ideation-consultant/references/ideation-contract.md"
+  ".agents/skills/develop-concept/SKILL.md"
+  ".agents/skills/develop-concept/references/concept-contract.md"
   ".agents/skills/trd-architect/SKILL.md"
   ".agents/skills/trd-architect/references/trd-contract.md"
 )

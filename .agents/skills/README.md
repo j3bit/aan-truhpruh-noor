@@ -11,7 +11,7 @@ This template includes the baseline SOP skill set:
 
 Pipeline placeholder skills for future integration:
 
-- `ideation-consultant`
+- `develop-concept`
 - `trd-architect`
 
 Required file pattern:

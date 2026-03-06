@@ -11,7 +11,7 @@ Template maintenance commands are documented in `README.md` Quickstart.
 
 Generated project loop (bootstrap output):
 
-1. (Optional placeholder stage) produce ideation artifact at `.blackboard/artifacts/ideation/<4digit>-<slug>.json`.
+1. (Optional ideation stage) produce ideation artifact at `.blackboard/artifacts/ideation/<4digit>-<slug>.json`.
 2. Create PRD with `create-prd` and save as `tasks/prd-<4digit>-<slug>.md`.
 3. Create TRD and save as `tasks/trd-<4digit>-<slug>.md`.
 4. Create atomic tasks + DAG with `plan-tasks` (TRD primary, PRD constraints-only) and save as:
