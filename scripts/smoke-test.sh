@@ -9,19 +9,40 @@ assert_file() {
   [[ -f "$path" ]] || { echo "[smoke] ERROR: missing file: $path" >&2; exit 1; }
 }
 
-run_bootstrap_check() {
+stack_runtime_ready() {
   local stack="$1"
+  case "${stack}" in
+    python)
+      command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1
+      ;;
+    node)
+      command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1
+      ;;
+    go)
+      command -v go >/dev/null 2>&1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+run_bootstrap_check() {
+  local stacks="$1"
   local root_dir="$2"
-  local target="${root_dir}/bootstrap-${stack}"
+  local name_suffix
+  name_suffix="$(printf '%s' "${stacks}" | tr ',' '-')"
+  local target="${root_dir}/bootstrap-${name_suffix}"
 
   bash "${REPO_ROOT}/scripts/bootstrap-new-project.sh" \
-    --name "bootstrap-${stack}" \
-    --stack "${stack}" \
+    --name "bootstrap-${name_suffix}" \
+    --stacks "${stacks}" \
     --dest "${target}"
 
   assert_file "${target}/AGENTS.md"
   assert_file "${target}/.codex/config.toml"
   assert_file "${target}/tasks/process-rules.md"
+  assert_file "${target}/tasks/stacks.json"
   assert_file "${target}/tasks/templates/trd.template.md"
   assert_file "${target}/tasks/templates/dag.template.md"
   assert_file "${target}/tasks/templates/dag.template.json"
@@ -35,6 +56,7 @@ run_bootstrap_check() {
   assert_file "${target}/scripts/qa-pipeline.sh"
   assert_file "${target}/scripts/static-review.sh"
   assert_file "${target}/scripts/validate-contracts.sh"
+  assert_file "${target}/scripts/lib/stack-registry.sh"
   assert_file "${target}/scripts/lib/blackboard.sh"
   assert_file "${target}/scripts/lib/stage-router.sh"
   assert_file "${target}/.github/workflows/check.yml"
@@ -73,27 +95,28 @@ run_bootstrap_check() {
   assert_file "${target}/docs/runbook/03-multi-agent.md"
   assert_file "${target}/docs/runbook/04-ralph.md"
 
-  if [[ "${stack}" == "python" ]]; then
-    if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
-      (cd "${target}" && bash ./scripts/check.sh --stack python)
-    else
-      echo "[smoke] INFO: python not available; skipping python gate execution"
-    fi
-  fi
+  if command -v bash >/dev/null 2>&1; then
+    runnable_stacks=()
+    missing_stacks=()
+    while IFS= read -r stack_name; do
+      stack_name="$(printf '%s' "${stack_name}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+      [[ -n "${stack_name}" ]] || continue
+      if stack_runtime_ready "${stack_name}"; then
+        runnable_stacks+=("${stack_name}")
+      else
+        missing_stacks+=("${stack_name}")
+      fi
+    done < <(printf '%s\n' "${stacks}" | tr ',' '\n')
 
-  if [[ "${stack}" == "node" ]]; then
-    if command -v node >/dev/null 2>&1; then
-      (cd "${target}" && bash ./scripts/check.sh --stack node)
-    else
-      echo "[smoke] INFO: node not available; skipping node gate execution"
+    if [[ "${#missing_stacks[@]}" -gt 0 ]]; then
+      echo "[smoke] INFO: skipping unavailable stack toolchains for ${target}: $(printf '%s\n' "${missing_stacks[@]}" | paste -sd ',' -)"
     fi
-  fi
 
-  if [[ "${stack}" == "go" ]]; then
-    if command -v go >/dev/null 2>&1; then
-      (cd "${target}" && bash ./scripts/check.sh --stack go)
+    if [[ "${#runnable_stacks[@]}" -eq 0 ]]; then
+      echo "[smoke] INFO: no runnable stacks for ${target}; skipping gate run"
     else
-      echo "[smoke] INFO: go not available; skipping go gate execution"
+      runnable_csv="$(printf '%s\n' "${runnable_stacks[@]}" | paste -sd ',' -)"
+      (cd "${target}" && bash ./scripts/check.sh --stacks "${runnable_csv}")
     fi
   fi
 }
@@ -106,8 +129,9 @@ done < <(find "${REPO_ROOT}/scripts" "${REPO_ROOT}/templates/stacks" "${REPO_ROO
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
-run_bootstrap_check python "${TMP_DIR}"
-run_bootstrap_check node "${TMP_DIR}"
-run_bootstrap_check go "${TMP_DIR}"
+run_bootstrap_check "python" "${TMP_DIR}"
+run_bootstrap_check "node" "${TMP_DIR}"
+run_bootstrap_check "go" "${TMP_DIR}"
+run_bootstrap_check "python,node" "${TMP_DIR}"
 
 echo "[smoke] PASS"
