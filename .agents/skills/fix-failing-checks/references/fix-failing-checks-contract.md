@@ -8,18 +8,18 @@ Required recovery inputs:
 
 1. Failing command (prefer full command line).
 2. Failure output logs (stderr/stdout or CI excerpt).
-3. Stack context (`python|node|go`) and optional `--project-dir`.
+3. Stack selector context (`--stacks <csv|auto>`) and optional `--project-dir`.
 
 If a command is missing, recover with repository standard gate command:
 
 ```bash
-./scripts/check.sh --stack <python|node|go>
+./scripts/check.sh --stacks <csv|auto>
 ```
 
 Optional project-path variant:
 
 ```bash
-./scripts/check.sh --stack <python|node|go> --project-dir <path>
+./scripts/check.sh --stacks <csv|auto> --project-dir <path>
 ```
 
 ## Failure Taxonomy

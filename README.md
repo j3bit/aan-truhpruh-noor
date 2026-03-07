@@ -8,7 +8,7 @@ This repository is a stack-neutral bootstrap template for running AI coding work
 - Procedure layer: `AGENTS.md` operating policy
 - Execution layer: lead-orchestrated Codex multi-agent workflow + stack adapters
 - Quality layer: CI gates + eval runner + runbooks
-- Bootstrap UX: script to generate a new repository with chosen starter stack
+- Bootstrap UX: script to generate a new repository with chosen starter stacks
 
 ## Quickstart (10 Minutes)
 
@@ -23,14 +23,14 @@ This repository is a stack-neutral bootstrap template for running AI coding work
 2. Bootstrap a new project:
 
 ```bash
-./scripts/bootstrap-new-project.sh --name my-app --stack python
+./scripts/bootstrap-new-project.sh --name my-app --stacks python,node
 ```
 
 3. Enter the generated project and run gate:
 
 ```bash
 cd ./my-app
-./scripts/check.sh --stack python
+./scripts/check.sh --stacks auto
 ```
 
 4. Create your first PRD/TRD/task/DAG artifacts from templates in `tasks/templates/`.
@@ -66,7 +66,7 @@ Local orchestration command:
 Standalone QA hard-gate command:
 
 ```bash
-./scripts/qa-pipeline.sh --project-dir . --stack <python|node|go>
+./scripts/qa-pipeline.sh --project-dir . --stacks auto
 ```
 
 ## PR Automated Review
@@ -109,7 +109,7 @@ This template ships with these SOP skills under `.agents/skills/`:
 ## check.sh Contract
 
 ```bash
-./scripts/check.sh --stack <python|node|go> [--changed-only] [--project-dir <path>]
+./scripts/check.sh [--stacks <csv|auto>] [--changed-only] [--project-dir <path>] [--registry <path>]
 ```
 
 `--project-dir` is useful when running the gate from the template root against a generated project path.
@@ -123,11 +123,12 @@ Contract rules validated by the gate:
 - DAG files use `tasks/dag-<4digit>-<slug>.json` and `tasks/dag-<4digit>-<slug>.md`
 - PRD files include section headings for `Problem`, `Goals`, `Non-goals`, `Success Metrics`, `Constraints`, `Test Strategy`, and `Rollout`
 - TRD files include architecture sections (`Context`, `Clean Architecture`, `Component Catalog`, `Interface Contracts`, `Dependency Graph`)
-- Task metadata includes `TRD`, `Task DAG`, `Task DAG Markdown`, and `Planning Artifact`
+- Task metadata includes `TRD`, `Task DAG`, `Task DAG Markdown`, `Planning Artifact`, and `Stack Registry`
 - Every `### T-...` block includes `Dependencies`, `Acceptance Criteria`, `Test Plan`, and `Done Definition`
 - Task dependencies and DAG JSON dependencies must match exactly
 - `Task DAG` and `Task DAG Markdown` metadata paths must match task file id/slug
 - Planning artifact metadata path must match `.blackboard/artifacts/task-planning/<4digit>-<slug>.json`
+- Stack registry metadata path must match `tasks/stacks.json`
 - Blackboard schema files under `tasks/contracts/blackboard/` must exist and be valid JSON
 
 Exit codes:
@@ -136,10 +137,27 @@ Exit codes:
 - `1`: check failure
 - `2`: configuration/input error
 
+## Legacy Migration
+
+If you have an older project still using `Gate Stack` and DAG `gate_stack`, run:
+
+```bash
+./scripts/migrate-polyglot.sh --project-dir .
+```
+
+Safe preview:
+
+```bash
+./scripts/migrate-polyglot.sh --project-dir . --dry-run
+```
+
+The migration script rewrites task/DAG metadata, creates `tasks/stacks.json`, adds
+`nodes[].gate_stacks` when missing, and writes `*.bak` backups before file changes.
+
 ## Troubleshooting
 
 - `ERROR: adapter not found`: verify `templates/stacks/<stack>/check.adapter.sh` exists.
 - `ERROR: <tool> not found`: install required runtime (Python/Node/Go).
 - CI failure on smoke test: run `./scripts/smoke-test.sh` locally and inspect missing files.
-- CI now runs root gate only when it detects root stack markers (`go.mod`, `package.json`, Python project markers).
+- CI runs root gate with `./scripts/check.sh --stacks auto`.
 - CI chain is `quality-gate -> qa-and-static -> release-readiness` (verification-only, no production deployment step).

@@ -37,7 +37,7 @@ The lead proposal output must include all fields below for each task:
 - `task_id`
 - `dependencies`
 - `parallel_safe`
-- `gate_stack`
+- `gate_stacks`
 - `risk_level`
 - `ready`
 - `stage`
@@ -52,7 +52,7 @@ Example:
   "task_id": "T-003",
   "dependencies": ["T-001", "T-002"],
   "parallel_safe": false,
-  "gate_stack": "python",
+  "gate_stacks": ["python", "node"],
   "risk_level": "medium",
   "ready": true,
   "stage": "IMPLEMENTATION",
@@ -130,6 +130,7 @@ Expected runtime artifacts for orchestration + QA integration:
 9. QA feedback relay must be `QA -> IMPLEMENTATION -> ORCHESTRATION`.
 10. Worker result JSON is the source for status transition updates.
 11. Existing integration feedback bundles are injected into subsequent worker runs for the same task.
+12. Summary output includes `stacks_executed` as the union of completed task `gate_stacks`.
 
 ## Local E2E Command
 

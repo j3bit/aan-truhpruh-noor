@@ -8,7 +8,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "plan-tasks-trd-primary" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 PLAN_SKILL="${TARGET}/.agents/skills/plan-tasks/SKILL.md"

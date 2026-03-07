@@ -8,7 +8,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "task-dag-artifact-metadata" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-task-dag-artifact-metadata.md"
@@ -24,7 +24,7 @@ cat > "${TARGET}/tasks/tasks-1234-task-dag-artifact-metadata.md" <<'EOF'
 - Task DAG: `tasks/dag-1234-task-dag-artifact-metadata.json`
 - Task DAG Markdown: `tasks/dag-1234-task-dag-artifact-metadata-wrong.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/wrong.json`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Owner: `eval`
 - Last Updated: `2026-02-28`
 
@@ -43,7 +43,7 @@ cat > "${TARGET}/tasks/tasks-1234-task-dag-artifact-metadata.md" <<'EOF'
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack python` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 EOF
 
 cat > "${TARGET}/tasks/dag-1234-task-dag-artifact-metadata.md" <<'EOF'
@@ -54,7 +54,7 @@ cat > "${TARGET}/tasks/dag-1234-task-dag-artifact-metadata.md" <<'EOF'
 - PRD: `tasks/prd-1234-task-dag-artifact-metadata.md`
 - TRD: `tasks/trd-1234-task-dag-artifact-metadata.md`
 - Tasks: `tasks/tasks-1234-task-dag-artifact-metadata.md`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Last Updated: 2026-02-28
 
 ## Nodes
@@ -74,13 +74,14 @@ cat > "${TARGET}/tasks/dag-1234-task-dag-artifact-metadata.json" <<'EOF'
     "prd": "tasks/prd-1234-task-dag-artifact-metadata.md",
     "trd": "tasks/trd-1234-task-dag-artifact-metadata.md",
     "tasks": "tasks/tasks-1234-task-dag-artifact-metadata.md",
-    "gate_stack": "python"
+    "stack_registry": "tasks/stacks.json"
   },
   "nodes": [
     {
       "task_id": "T-001",
       "depends_on": [],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     }
   ]

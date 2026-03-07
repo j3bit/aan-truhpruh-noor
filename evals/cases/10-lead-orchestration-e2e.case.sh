@@ -17,7 +17,7 @@ trap cleanup EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "lead-e2e" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-lead-e2e.md"
@@ -33,7 +33,7 @@ cat > "${TARGET}/tasks/tasks-1234-lead-e2e.md" <<'EOF'
 - Task DAG: `tasks/dag-1234-lead-e2e.json`
 - Task DAG Markdown: `tasks/dag-1234-lead-e2e.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/1234-lead-e2e.json`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Owner: `lead-e2e`
 - Last Updated: `2026-02-23`
 
@@ -59,7 +59,7 @@ cat > "${TARGET}/tasks/tasks-1234-lead-e2e.md" <<'EOF'
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack python` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 - Notes:
   -
 
@@ -78,7 +78,7 @@ cat > "${TARGET}/tasks/tasks-1234-lead-e2e.md" <<'EOF'
 - Done Definition:
   1. Acceptance criteria are satisfied.
   2. Test plan was executed and evidenced.
-  3. `./scripts/check.sh --stack python` exits with code `0`.
+  3. `./scripts/check.sh --stacks auto` exits with code `0`.
 - Notes:
   -
 EOF
@@ -91,7 +91,7 @@ bash -c "cat > \"${TARGET}/tasks/dag-1234-lead-e2e.md\" <<'EOF'
 - PRD: \`tasks/prd-1234-lead-e2e.md\`
 - TRD: \`tasks/trd-1234-lead-e2e.md\`
 - Tasks: \`tasks/tasks-1234-lead-e2e.md\`
-- Gate Stack: \`python\`
+- Stack Registry: \`tasks/stacks.json\`
 - Last Updated: 2026-02-23
 
 ## Nodes
@@ -113,19 +113,21 @@ cat > "${TARGET}/tasks/dag-1234-lead-e2e.json" <<'EOF'
     "prd": "tasks/prd-1234-lead-e2e.md",
     "trd": "tasks/trd-1234-lead-e2e.md",
     "tasks": "tasks/tasks-1234-lead-e2e.md",
-    "gate_stack": "python"
+    "stack_registry": "tasks/stacks.json"
   },
   "nodes": [
     {
       "task_id": "T-001",
       "depends_on": [],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     },
     {
       "task_id": "T-002",
       "depends_on": ["T-001"],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     }
   ]
@@ -173,7 +175,7 @@ jq -e '
   has("task_id") and
   has("dependencies") and
   has("parallel_safe") and
-  has("gate_stack") and
+  has("gate_stacks") and
   has("risk_level") and
   has("ready") and
   has("stage") and

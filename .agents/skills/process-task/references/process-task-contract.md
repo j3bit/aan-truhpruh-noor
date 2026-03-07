@@ -58,13 +58,13 @@ Record execution evidence in task notes:
 Primary gate command:
 
 ```bash
-./scripts/check.sh --stack <python|node|go>
+./scripts/check.sh --stacks <csv|auto>
 ```
 
 Optional project-path variant:
 
 ```bash
-./scripts/check.sh --stack <python|node|go> --project-dir <path>
+./scripts/check.sh --stacks <csv|auto> --project-dir <path>
 ```
 
 Contract-only validation:

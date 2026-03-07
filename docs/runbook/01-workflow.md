@@ -26,13 +26,13 @@ Generated project loop (bootstrap output):
    - optional `fix-failing-checks` (only when gate fails)
    - `pr-review` after gate passes
 8. Run QA/static hard gate after orchestration:
-   - `./scripts/qa-pipeline.sh --project-dir . --stack <python|node|go>`
+   - `./scripts/qa-pipeline.sh --project-dir . --stacks auto`
 9. Create one PR per task and merge in dependency order.
 10. Run `./evals/run-evals.sh` and add/adjust cases after failures.
 
 ## Required Contracts
 
-1. Gate command: `./scripts/check.sh --stack <python|node|go>`.
+1. Gate command: `./scripts/check.sh --stacks <csv|auto>`.
 2. One-task-at-a-time per sub-agent.
 3. Lead agent is propose-only (read/analyze/propose, no file writes).
 4. Replan is allowed only for failure/blocker cases.
