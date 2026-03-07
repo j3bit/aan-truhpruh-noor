@@ -50,7 +50,7 @@ Markdown output must use this fixed section order (Lean Product Concept / `produ
 4. `Key User Journey`
 5. `Constraints & Out of Scope`
 
-Use `/Users/jeongsaebit/.codex/worktrees/63fe/aan-truhpruh-noor/.agents/skills/develop-concept/references/concept-contract.md` for JSON field requirements and section-to-field mapping.
+Use `references/concept-contract.md` for JSON field requirements and section-to-field mapping.
 
 ## Procedure
 
