@@ -36,10 +36,10 @@ Contract validation:
 ./scripts/validate-contracts.sh --project-dir .
 ```
 
-Full gate validation (stack required):
+Full gate validation (stack registry required):
 
 ```bash
-./scripts/check.sh --stack <python|node|go>
+./scripts/check.sh --stacks <csv|auto>
 ```
 
 ## Practical Authoring Notes

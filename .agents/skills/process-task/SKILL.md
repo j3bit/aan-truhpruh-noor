@@ -28,7 +28,7 @@ Collect or infer these inputs before writing:
 3. Paired PRD path (`tasks/prd-<4digit>-<slug>.md`).
 4. Paired TRD path (`tasks/trd-<4digit>-<slug>.md`).
 5. DAG path (`tasks/dag-<4digit>-<slug>.json`).
-6. Gate stack (`python|node|go`).
+6. Stack selector for gate execution (`--stacks auto` or explicit CSV).
 7. Optional integration artifact path (`.blackboard/integration/tasks/<task_id>.json`).
 8. Optional integration feedback bundle (`.blackboard/feedback/integration/<task_id>.json`).
 9. Optional user constraints (timebox, exclusions, risk limits).
@@ -37,7 +37,7 @@ If task file path is not explicitly provided, inspect `tasks/tasks-*.md` and res
 If task id resolution returns zero matches, do not mutate any task status; report `task id not found` as a request-level blocker and stop.
 If task id resolution returns multiple matches, do not mutate any task status; report ambiguity and candidate task file paths as a request-level blocker and stop.
 If any paired artifact path (`PRD`, `TRD`, `DAG`) is missing, set status `blocked`, record missing file paths in notes, and stop.
-If gate stack is not explicitly provided, read `Gate Stack` from task file metadata.
+If stacks are not explicitly provided, use `--stacks auto` and read `Stack Registry` from task file metadata.
 
 ## Output Contract
 
@@ -52,7 +52,7 @@ Primary outputs:
 
 Verification command:
 
-- `./scripts/check.sh --stack <python|node|go>`
+- `./scripts/check.sh --stacks <csv|auto>`
 
 Reference contract details from `references/process-task-contract.md`.
 
@@ -77,7 +77,7 @@ Reference contract details from `references/process-task-contract.md`.
    - write or update failing tests that express the acceptance criteria
    - implement minimal changes to make tests pass
 6. Execute task-specific test plan commands.
-7. Run gate command (`./scripts/check.sh --stack <python|node|go>`).
+7. Run gate command (`./scripts/check.sh --stacks <csv|auto>`).
 8. Record execution evidence in task notes:
    - commands run
    - pass/fail outcomes
@@ -96,7 +96,7 @@ Mark completion only when all conditions are true:
 2. Acceptance criteria are satisfied by repository changes.
 3. TDD evidence exists (tests created/updated before final implementation pass).
 4. Task test plan was executed and evidenced.
-5. `./scripts/check.sh --stack <python|node|go>` exits with code `0`.
+5. `./scripts/check.sh --stacks <csv|auto>` exits with code `0`.
 6. Task notes include check and test evidence.
 7. No unrelated task scope was modified.
 8. When interfaces/contracts change, required documentation updates are completed and evidenced in task notes.

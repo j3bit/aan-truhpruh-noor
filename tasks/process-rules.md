@@ -2,7 +2,7 @@
 
 These rules govern all implementation work in this repository.
 
-1. **Contract-first**: start from `PRD`, `TRD`, `TASKS`, and `DAG` files; do not code from chat alone.
+1. **Contract-first**: start from `PRD`, `TRD`, `TASKS`, `DAG`, and `tasks/stacks.json`; do not code from chat alone.
 2. **Atomic execution**: run one unblocked task at a time.
 3. **Bounded scope**: reject unplanned scope expansion; create a new task instead.
 4. **Gate-required completion**: task completion requires `scripts/check.sh` exit code `0`.

@@ -27,7 +27,7 @@ Collect or infer these inputs before writing:
 2. Source PRD path (`tasks/prd-<4digit>-<slug>.md`) for goals/non-goals/constraints validation only.
 3. Task decomposition boundaries and delivery phases.
 4. Owner and update metadata.
-5. Required gate stack (`python|node|go`) for completion checks.
+5. Stack registry path and per-task `gate_stacks` assignment for completion checks.
 
 If id/slug is missing, derive from TRD filename:
 
@@ -93,7 +93,7 @@ Reference contract details from `references/tasks-contract.md`.
 12. Validate contract compatibility as preflight:
    - run `./scripts/validate-contracts.sh --project-dir .` when available
 13. Run full gate for completion:
-   - run `./scripts/check.sh --stack <python|node|go> --project-dir .`
+   - run `./scripts/check.sh --stacks <csv|auto> --project-dir .`
 14. If validation or gate fails, revise artifacts and rerun checks.
 
 ## Completion Conditions
@@ -106,13 +106,13 @@ Mark completion only when all conditions are true:
 4. Metadata fields are populated in generated artifacts:
    - `Owner`
    - `Last Updated`
-   - `Gate Stack`
+   - `Stack Registry`
    - `Task DAG`
    - `Task DAG Markdown`
    - `Planning Artifact`
 5. No unrelated files are changed.
 6. Contract validation passes (or a blocked reason is recorded if command execution is unavailable).
-7. `./scripts/check.sh --stack <python|node|go> --project-dir .` exits with code `0` (or a blocked reason is recorded if command execution is unavailable).
+7. `./scripts/check.sh --stacks <csv|auto> --project-dir .` exits with code `0` (or a blocked reason is recorded if command execution is unavailable).
 
 ## Failure And Retry Rules
 

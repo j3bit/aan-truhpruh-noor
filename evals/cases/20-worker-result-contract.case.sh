@@ -10,7 +10,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "worker-result-contract" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-worker-result-contract.md"
@@ -26,7 +26,7 @@ cat > "${TARGET}/tasks/tasks-1234-worker-result-contract.md" <<'EOF'
 - Task DAG: `tasks/dag-1234-worker-result-contract.json`
 - Task DAG Markdown: `tasks/dag-1234-worker-result-contract.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/1234-worker-result-contract.json`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 
 ## Task List
 
@@ -52,7 +52,7 @@ cat > "${TARGET}/tasks/dag-1234-worker-result-contract.md" <<'EOF'
 - PRD: `tasks/prd-1234-worker-result-contract.md`
 - TRD: `tasks/trd-1234-worker-result-contract.md`
 - Tasks: `tasks/tasks-1234-worker-result-contract.md`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Last Updated: 2026-03-01
 
 ## Nodes
@@ -72,13 +72,14 @@ cat > "${TARGET}/tasks/dag-1234-worker-result-contract.json" <<'EOF'
     "prd": "tasks/prd-1234-worker-result-contract.md",
     "trd": "tasks/trd-1234-worker-result-contract.md",
     "tasks": "tasks/tasks-1234-worker-result-contract.md",
-    "gate_stack": "python"
+    "stack_registry": "tasks/stacks.json"
   },
   "nodes": [
     {
       "task_id": "T-001",
       "depends_on": [],
       "parallel_safe": true,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     }
   ]

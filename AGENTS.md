@@ -13,8 +13,9 @@ Use these files as the canonical source of state:
 2. `tasks/trd-*.md` for system architecture contract.
 3. `tasks/tasks-*.md` for atomic execution slices.
 4. `tasks/dag-*.json` for dependency graph contract.
-5. `tasks/process-rules.md` for non-negotiable operating rules.
-6. `scripts/check.sh` for quality gate decisions.
+5. `tasks/stacks.json` for stack registry contract.
+6. `tasks/process-rules.md` for non-negotiable operating rules.
+7. `scripts/check.sh` for quality gate decisions.
 
 If chat instructions conflict with these files, update files first and then execute.
 
@@ -40,9 +41,10 @@ A task is done only when all items are true:
 
 Generated project operations:
 
-- Gate entrypoint: `./scripts/check.sh --stack <python|node|go>`
-- Changed-only gate: `./scripts/check.sh --stack <python|node|go> --changed-only`
-- Bootstrap a new repo: `./scripts/bootstrap-new-project.sh --name <project-name> --stack <python|node|go>`
+- Gate entrypoint: `./scripts/check.sh --stacks <csv|auto>`
+- Changed-only gate: `./scripts/check.sh --stacks <csv|auto> --changed-only`
+- Bootstrap a new repo: `./scripts/bootstrap-new-project.sh --name <project-name> --stacks <comma-separated-stack-list>`
+- Migrate legacy single-stack contracts: `./scripts/migrate-polyglot.sh --project-dir <path>`
 
 Template maintenance operations (run in this template repository):
 
@@ -81,13 +83,15 @@ Template maintenance operations (run in this template repository):
 
 ## Core Skills Baseline
 
-This template includes these baseline SOP skills under `.agents/skills/`:
+This template includes these SOP skills under `.agents/skills/`:
 
-1. `create-prd`
-2. `plan-tasks`
-3. `orchestrate-tasks`
-4. `process-task`
-5. `fix-failing-checks`
-6. `pr-review`
+1. `develop-concept`
+2. `create-prd`
+3. `create-trd`
+4. `plan-tasks`
+5. `orchestrate-tasks`
+6. `process-task`
+7. `fix-failing-checks`
+8. `pr-review`
 
-These six skills are part of the default template contract and must remain present unless replaced by an equivalent governed process.
+These skills are part of the default template contract and must remain present unless replaced by an equivalent governed process.

@@ -1,35 +1,28 @@
 # Runbook 06: Skill Baseline
 
-This repository includes six baseline skills as part of the default template contract.
+This repository includes a stable skill baseline for planning, orchestration, implementation, and review.
 
-## Baseline Skill Set
+## Skill Set
 
+- `develop-concept`
 - `create-prd`
+- `create-trd`
 - `plan-tasks`
 - `orchestrate-tasks`
 - `process-task`
 - `fix-failing-checks`
 - `pr-review`
 
-## Planning Pipeline Skills
-
-The template includes planning-pipeline skills for concept and architecture stages:
-
-- `trd-architect`
-
 ## Integration Point
 
-- Baseline skills live under `.agents/skills/`.
+- Skills live under `.agents/skills/`.
 - Keep each skill self-contained (`SKILL.md`, optional scripts/assets/references).
 - Additional skills are optional extensions and must not weaken contract or gate behavior.
-- Planning pipeline skills must keep outputs schema-compatible with:
-  - `tasks/contracts/blackboard/ideation-output.schema.json`
-  - `tasks/contracts/blackboard/trd-output.schema.json`
-  - `tasks/contracts/blackboard/task-planning-output.schema.json`
+- Skill outputs must remain schema-compatible with contracts under `tasks/contracts/blackboard/` when emitting blackboard artifacts.
 - Recommended execution chain per delivery slice:
   - `develop-concept`
   - `create-prd`
-  - `trd-architect` (placeholder stage or implementation replacement)
+  - `create-trd`
   - `plan-tasks` (TRD primary, PRD constraints-only)
   - `orchestrate-tasks`
   - `process-task`
@@ -38,9 +31,7 @@ The template includes planning-pipeline skills for concept and architecture stag
 
 ## Validation Checklist
 
-1. Baseline skill files exist at `.agents/skills/<skill-name>/SKILL.md`.
-2. Planning pipeline skill files exist at:
-   - `.agents/skills/develop-concept/SKILL.md`
-   - `.agents/skills/trd-architect/SKILL.md`
+1. Required skill files exist at `.agents/skills/<skill-name>/SKILL.md`.
+2. Required support files referenced by each skill exist.
 3. Skill output paths match repository contracts (`tasks/`, `.blackboard/`, `scripts/check.sh`).
 4. Skill instructions do not bypass gate rules.

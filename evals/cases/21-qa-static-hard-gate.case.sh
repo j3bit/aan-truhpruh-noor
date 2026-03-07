@@ -8,7 +8,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "qa-static-hard-gate" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-qa-static-hard-gate.md"
@@ -24,7 +24,7 @@ cat > "${TARGET}/tasks/tasks-1234-qa-static-hard-gate.md" <<'EOF'
 - Task DAG: `tasks/dag-1234-qa-static-hard-gate.json`
 - Task DAG Markdown: `tasks/dag-1234-qa-static-hard-gate.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/1234-qa-static-hard-gate.json`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 
 ## Task List
 
@@ -50,7 +50,7 @@ cat > "${TARGET}/tasks/dag-1234-qa-static-hard-gate.md" <<'EOF'
 - PRD: `tasks/prd-1234-qa-static-hard-gate.md`
 - TRD: `tasks/trd-1234-qa-static-hard-gate.md`
 - Tasks: `tasks/tasks-1234-qa-static-hard-gate.md`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 - Last Updated: 2026-03-01
 
 ## Nodes
@@ -70,13 +70,14 @@ cat > "${TARGET}/tasks/dag-1234-qa-static-hard-gate.json" <<'EOF'
     "prd": "tasks/prd-1234-qa-static-hard-gate.md",
     "trd": "tasks/trd-1234-qa-static-hard-gate.md",
     "tasks": "tasks/tasks-1234-qa-static-hard-gate.md",
-    "gate_stack": "python"
+    "stack_registry": "tasks/stacks.json"
   },
   "nodes": [
     {
       "task_id": "T-001",
       "depends_on": [],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     }
   ]
@@ -92,7 +93,7 @@ chmod +x "${TARGET}/scripts/convention-violation.sh"
 set +e
 bash "${TARGET}/scripts/qa-pipeline.sh" \
   --project-dir "${TARGET}" \
-  --stack python >/dev/null
+  --stacks auto >/dev/null
 qa_status=$?
 set -e
 
@@ -109,8 +110,11 @@ test -f "${qa_report}"
 test -f "${static_report}"
 test -d "${feedback_dir}"
 
-jq -e '.passed == false and (.failures | index("static-review")) != null' "${qa_report}" >/dev/null
-jq -e '.passed == false and .convention_count > 0' "${static_report}" >/dev/null
+jq -e '.passed == false and any(.failures[]; test("static-review"))' "${qa_report}" >/dev/null
+stack_static_report="$(jq -r '.reports[0].report_path' "${static_report}")"
+test -n "${stack_static_report}"
+test -f "${stack_static_report}"
+jq -e '.passed == false and .checks.conventions.count > 0' "${stack_static_report}" >/dev/null
 
 if ! find "${feedback_dir}" -type f -name 'qa-failure-*.json' -print -quit | grep -q .; then
   echo "[case-21] missing QA feedback bundle artifact" >&2

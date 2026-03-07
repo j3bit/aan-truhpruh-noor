@@ -9,7 +9,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "parallel-safe-wave" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 cp "${TARGET}/tasks/templates/prd.template.md" "${TARGET}/tasks/prd-1234-parallel-safe-wave.md"
@@ -25,7 +25,7 @@ cat > "${TARGET}/tasks/tasks-1234-parallel-safe-wave.md" <<'EOF'
 - Task DAG: `tasks/dag-1234-parallel-safe-wave.json`
 - Task DAG Markdown: `tasks/dag-1234-parallel-safe-wave.md`
 - Planning Artifact: `.blackboard/artifacts/task-planning/1234-parallel-safe-wave.json`
-- Gate Stack: `python`
+- Stack Registry: `tasks/stacks.json`
 
 ## Task List
 
@@ -90,31 +90,35 @@ cat > "${TARGET}/tasks/dag-1234-parallel-safe-wave.json" <<'EOF'
     "prd": "tasks/prd-1234-parallel-safe-wave.md",
     "trd": "tasks/trd-1234-parallel-safe-wave.md",
     "tasks": "tasks/tasks-1234-parallel-safe-wave.md",
-    "gate_stack": "python"
+    "stack_registry": "tasks/stacks.json"
   },
   "nodes": [
     {
       "task_id": "T-001",
       "depends_on": [],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     },
     {
       "task_id": "T-002",
       "depends_on": [],
       "parallel_safe": false,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     },
     {
       "task_id": "T-003",
       "depends_on": [],
       "parallel_safe": true,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     },
     {
       "task_id": "T-004",
       "depends_on": [],
       "parallel_safe": true,
+      "gate_stacks": ["python"],
       "stage": "IMPLEMENTATION"
     }
   ]

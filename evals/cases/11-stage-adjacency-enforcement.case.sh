@@ -8,7 +8,7 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --name "adjacency-check" \
-  --stack python \
+  --stacks python \
   --dest "${TARGET}"
 
 # shellcheck source=/dev/null

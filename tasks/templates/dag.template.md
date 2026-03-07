@@ -5,13 +5,13 @@
 - PRD: `tasks/prd-<4digit>-<slug>.md`
 - TRD: `tasks/trd-<4digit>-<slug>.md`
 - Tasks: `tasks/tasks-<4digit>-<slug>.md`
-- Gate Stack: `<python|node|go>`
+- Stack Registry: `tasks/stacks.json`
 - Last Updated:
 
 ## Nodes
-| Task ID | Depends On | Parallel-safe | Stage |
-|---|---|---|---|
-| T-001 | none | no | IMPLEMENTATION |
+| Task ID | Depends On | Parallel-safe | Gate Stacks | Stage |
+|---|---|---|---|---|
+| T-001 | none | no | python | IMPLEMENTATION |
 
 ## Waves (Topological Order)
 1. Wave 1: T-001

@@ -2,17 +2,14 @@
 
 This template includes the baseline SOP skill set:
 
+- `develop-concept`
 - `create-prd`
+- `create-trd`
 - `plan-tasks`
 - `orchestrate-tasks`
 - `process-task`
 - `fix-failing-checks`
 - `pr-review`
-
-Pipeline placeholder skills for future integration:
-
-- `develop-concept`
-- `trd-architect`
 
 Required file pattern:
 

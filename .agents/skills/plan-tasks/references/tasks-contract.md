@@ -47,7 +47,7 @@ Contract validation:
 Full gate validation (stack required):
 
 ```bash
-./scripts/check.sh --stack <python|node|go>
+./scripts/check.sh --stacks <csv|auto>
 ```
 
 ## Practical Authoring Notes
