@@ -83,13 +83,15 @@ Template maintenance operations (run in this template repository):
 
 ## Core Skills Baseline
 
-This template includes these baseline SOP skills under `.agents/skills/`:
+This template includes these SOP skills under `.agents/skills/`:
 
 1. `create-prd`
-2. `plan-tasks`
-3. `orchestrate-tasks`
-4. `process-task`
-5. `fix-failing-checks`
-6. `pr-review`
+2. `create-trd`
+3. `ideation-consultant`
+4. `plan-tasks`
+5. `orchestrate-tasks`
+6. `process-task`
+7. `fix-failing-checks`
+8. `pr-review`
 
-These six skills are part of the default template contract and must remain present unless replaced by an equivalent governed process.
+These skills are part of the default template contract and must remain present unless replaced by an equivalent governed process.

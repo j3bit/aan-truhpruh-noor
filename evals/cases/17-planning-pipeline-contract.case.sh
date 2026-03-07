@@ -3,11 +3,11 @@ set -euo pipefail
 
 ROOT="${EVAL_REPO_ROOT:-$(pwd)}"
 TMP_DIR="$(mktemp -d)"
-TARGET="${TMP_DIR}/planning-placeholder-contract"
+TARGET="${TMP_DIR}/planning-pipeline-contract"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
 bash "${ROOT}/scripts/bootstrap-new-project.sh" \
-  --name "planning-placeholder-contract" \
+  --name "planning-pipeline-contract" \
   --stacks python \
   --dest "${TARGET}"
 
@@ -22,7 +22,7 @@ missing_skill_status=$?
 set -e
 
 if [[ "${missing_skill_status}" -eq 0 ]]; then
-  echo "[case-17] contract validation passed despite missing ideation placeholder skill" >&2
+  echo "[case-17] contract validation passed despite missing ideation skill" >&2
   exit 1
 fi
 

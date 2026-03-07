@@ -37,7 +37,7 @@ cd ./my-app
 
 ## Standard Routine
 
-1. (Optional placeholder stage) Produce ideation artifact at `.blackboard/artifacts/ideation/<4digit>-<slug>.json`
+1. (Optional ideation stage) Produce ideation artifact at `.blackboard/artifacts/ideation/<4digit>-<slug>.json`
 2. Write PRD (`tasks/prd-<4digit>-<slug>.md`)
 3. Write TRD (`tasks/trd-<4digit>-<slug>.md`)
 4. Plan tasks and DAG from TRD (`tasks/tasks-<4digit>-<slug>.md`, `tasks/dag-<4digit>-<slug>.json`, `tasks/dag-<4digit>-<slug>.md`)
@@ -86,8 +86,7 @@ PR automated review is handled by Codex Web GitHub integration (not GitHub Actio
 - `evals/`: regression checks for process quality
 - `docs/runbook/`: operational guidance
 - `.codex/config.toml`: multi-agent orchestration defaults
-- `.agents/skills/`: baseline SOP skills (`create-prd`, `plan-tasks`, `orchestrate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
-- `.agents/skills/ideation-consultant`, `.agents/skills/trd-architect`: placeholder pipeline contracts for future skill-generated implementations
+- `.agents/skills/`: baseline SOP skills (`create-prd`, `create-trd`, `ideation-consultant`, `plan-tasks`, `orchestrate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
 - `.blackboard/`: runtime blackboard artifacts/events (generated at orchestration time)
   - worker result contracts: `.orchestration/workers/<task_id>.result.json`
   - integration feedback bundles: `.blackboard/feedback/integration/<task_id>.json`
@@ -96,19 +95,16 @@ PR automated review is handled by Codex Web GitHub integration (not GitHub Actio
 
 ## Core Skills Baseline
 
-This template ships with six baseline skills under `.agents/skills/`:
+This template ships with these SOP skills under `.agents/skills/`:
 
 - `create-prd`: idea -> `tasks/prd-*.md`
+- `create-trd`: system-architect TRD generation (`PRD -> TRD + TRD blackboard artifact`)
+- `ideation-consultant`: ideation artifact generation for upstream product definition
 - `plan-tasks`: TRD -> `tasks/tasks-*.md` + `tasks/dag-*.{md,json}`
 - `orchestrate-tasks`: DAG/wave orchestration + blackboard integration artifacts
 - `process-task`: one task execution (TDD-first) + gate verification
 - `fix-failing-checks`: recover failing gate with bounded fixes
 - `pr-review`: risk-first diff review
-
-Planning pipeline placeholder skills:
-
-- `ideation-consultant`: ideation artifact contract for upstream product storytelling output
-- `trd-architect`: TRD artifact contract for architecture-complete downstream planning input
 
 ## check.sh Contract
 
