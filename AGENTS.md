@@ -85,9 +85,9 @@ Template maintenance operations (run in this template repository):
 
 This template includes these SOP skills under `.agents/skills/`:
 
-1. `create-prd`
-2. `create-trd`
-3. `ideation-consultant`
+1. `develop-concept`
+2. `create-prd`
+3. `create-trd`
 4. `plan-tasks`
 5. `orchestrate-tasks`
 6. `process-task`

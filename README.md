@@ -86,7 +86,7 @@ PR automated review is handled by Codex Web GitHub integration (not GitHub Actio
 - `evals/`: regression checks for process quality
 - `docs/runbook/`: operational guidance
 - `.codex/config.toml`: multi-agent orchestration defaults
-- `.agents/skills/`: baseline SOP skills (`create-prd`, `create-trd`, `ideation-consultant`, `plan-tasks`, `orchestrate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
+- `.agents/skills/`: baseline SOP skills (`develop-concept`, `create-prd`, `create-trd`, `plan-tasks`, `orchestrate-tasks`, `process-task`, `fix-failing-checks`, `pr-review`)
 - `.blackboard/`: runtime blackboard artifacts/events (generated at orchestration time)
   - worker result contracts: `.orchestration/workers/<task_id>.result.json`
   - integration feedback bundles: `.blackboard/feedback/integration/<task_id>.json`
@@ -97,15 +97,14 @@ PR automated review is handled by Codex Web GitHub integration (not GitHub Actio
 
 This template ships with these SOP skills under `.agents/skills/`:
 
+- `develop-concept`: ideation artifact generation for upstream product definition
 - `create-prd`: idea -> `tasks/prd-*.md`
 - `create-trd`: system-architect TRD generation (`PRD -> TRD + TRD blackboard artifact`)
-- `ideation-consultant`: ideation artifact generation for upstream product definition
 - `plan-tasks`: TRD -> `tasks/tasks-*.md` + `tasks/dag-*.{md,json}`
 - `orchestrate-tasks`: DAG/wave orchestration + blackboard integration artifacts
 - `process-task`: one task execution (TDD-first) + gate verification
 - `fix-failing-checks`: recover failing gate with bounded fixes
 - `pr-review`: risk-first diff review
-
 ## check.sh Contract
 
 ```bash
