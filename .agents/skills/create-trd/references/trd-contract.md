@@ -58,7 +58,7 @@ Contract validation:
 Full gate validation:
 
 ```bash
-./scripts/check.sh --stack <python|node|go>
+./scripts/check.sh --stacks auto
 ```
 
 ## Practical Authoring Notes
