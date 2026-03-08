@@ -4,7 +4,7 @@ This repository includes a stable skill baseline for planning, orchestration, im
 
 ## Skill Set
 
-- `ideation-consultant`
+- `develop-concept`
 - `create-prd`
 - `create-trd`
 - `plan-tasks`
@@ -20,7 +20,7 @@ This repository includes a stable skill baseline for planning, orchestration, im
 - Additional skills are optional extensions and must not weaken contract or gate behavior.
 - Skill outputs must remain schema-compatible with contracts under `tasks/contracts/blackboard/` when emitting blackboard artifacts.
 - Recommended execution chain per delivery slice:
-  - `ideation-consultant`
+  - `develop-concept`
   - `create-prd`
   - `create-trd`
   - `plan-tasks` (TRD primary, PRD constraints-only)
