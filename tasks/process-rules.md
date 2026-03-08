@@ -16,3 +16,4 @@ These rules govern all implementation work in this repository.
 12. **Blackboard state**: orchestration state and integration directives must be persisted under `.blackboard/`.
 13. **Stage adjacency**: actor communication is allowed only between adjacent stages in the canonical pipeline.
 14. **Strict self-heal relay**: QA feedback must flow `QA -> IMPLEMENTATION -> ORCHESTRATION`; direct QA to ORCHESTRATION is forbidden.
+15. **Product-root workspace**: the repository root is the product workspace; keep live product code under `apps/`, `packages/`, `tests/`, and `infra/`, never under `services/*` or `examples/*`.

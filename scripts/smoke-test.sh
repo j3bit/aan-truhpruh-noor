@@ -9,6 +9,39 @@ assert_file() {
   [[ -f "$path" ]] || { echo "[smoke] ERROR: missing file: $path" >&2; exit 1; }
 }
 
+assert_dir() {
+  local path="$1"
+  [[ -d "$path" ]] || { echo "[smoke] ERROR: missing directory: $path" >&2; exit 1; }
+}
+
+assert_not_dir() {
+  local path="$1"
+  [[ ! -d "$path" ]] || { echo "[smoke] ERROR: unexpected directory: $path" >&2; exit 1; }
+}
+
+assert_stack_paths_root() {
+  local registry_path="$1"
+  perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    my ($path) = @ARGV;
+    local $/;
+    open my $fh, "<", $path or die "open_failed\n";
+    my $obj = decode_json(<$fh>);
+    close $fh;
+    die "missing_stacks\n" unless ref($obj->{stacks}) eq "ARRAY";
+    for my $stack (@{$obj->{stacks}}) {
+      die "missing_projects\n" unless ref($stack->{projects}) eq "ARRAY";
+      for my $project (@{$stack->{projects}}) {
+        die "non_root_project_path\n" unless $project->{path} eq ".";
+      }
+    }
+  ' "${registry_path}" >/dev/null 2>&1 || {
+    echo "[smoke] ERROR: expected all stack project paths to be '.' in ${registry_path}" >&2
+    exit 1
+  }
+}
+
 stack_runtime_ready() {
   local stack="$1"
   case "${stack}" in
@@ -50,12 +83,14 @@ run_bootstrap_check() {
   assert_file "${target}/tasks/contracts/blackboard/trd-output.schema.json"
   assert_file "${target}/tasks/contracts/blackboard/task-planning-output.schema.json"
   assert_file "${target}/scripts/check.sh"
+  assert_file "${target}/scripts/align-product-root.sh"
   assert_file "${target}/scripts/lead-orchestrate.sh"
   assert_file "${target}/scripts/run-sub-agent.sh"
   assert_file "${target}/scripts/qa-generate-scenarios.sh"
   assert_file "${target}/scripts/qa-pipeline.sh"
   assert_file "${target}/scripts/static-review.sh"
   assert_file "${target}/scripts/validate-contracts.sh"
+  assert_file "${target}/scripts/lib/product-root-layout.sh"
   assert_file "${target}/scripts/lib/stack-registry.sh"
   assert_file "${target}/scripts/lib/blackboard.sh"
   assert_file "${target}/scripts/lib/stage-router.sh"
@@ -94,6 +129,18 @@ run_bootstrap_check() {
   assert_file "${target}/evals/cases/22-ci-qa-release-readiness.case.sh"
   assert_file "${target}/docs/runbook/03-multi-agent.md"
   assert_file "${target}/docs/runbook/04-ralph.md"
+  assert_file "${target}/docs/runbook/07-repo-structure.md"
+  assert_dir "${target}/apps"
+  assert_dir "${target}/packages"
+  assert_dir "${target}/tests"
+  assert_dir "${target}/tests/integration"
+  assert_dir "${target}/infra"
+  assert_dir "${target}/infra/env"
+  assert_dir "${target}/docs/adr"
+  assert_dir "${target}/docs/specs"
+  assert_not_dir "${target}/services"
+  assert_not_dir "${target}/examples"
+  assert_stack_paths_root "${target}/tasks/stacks.json"
 
   if command -v bash >/dev/null 2>&1; then
     runnable_stacks=()

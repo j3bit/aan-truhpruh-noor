@@ -12,6 +12,70 @@ bash "${ROOT}/scripts/bootstrap-new-project.sh" \
   --stacks python,node \
   --dest "${TARGET}"
 
+mkdir -p "${TARGET}/apps/python" "${TARGET}/apps/node" "${TARGET}/packages" "${TARGET}/tests" "${TARGET}/infra"
+
+cat > "${TARGET}/tasks/stacks.json" <<'EOF_JSON'
+{
+  "version": 1,
+  "stacks": [
+    {
+      "name": "python",
+      "adapter": "templates/stacks/python/check.adapter.sh",
+      "projects": [
+        {
+          "path": ".",
+          "owned_paths": ["apps/python/**/*.py", "pyproject.toml"]
+        }
+      ]
+    },
+    {
+      "name": "node",
+      "adapter": "templates/stacks/node/check.adapter.sh",
+      "projects": [
+        {
+          "path": ".",
+          "owned_paths": ["apps/node/**/*.{js,ts}", "package.json"]
+        }
+      ]
+    }
+  ]
+}
+EOF_JSON
+
+cat > "${TARGET}/pyproject.toml" <<'EOF_TOML'
+[project]
+name = "cross-stack-rename-selection"
+version = "0.1.0"
+EOF_TOML
+
+cat > "${TARGET}/apps/python/main.py" <<'EOF_PY'
+print("python file to rename")
+EOF_PY
+
+cat > "${TARGET}/test_smoke.py" <<'EOF_PY'
+import unittest
+
+
+class SmokeTest(unittest.TestCase):
+    def test_truth(self) -> None:
+        self.assertTrue(True)
+
+
+if __name__ == "__main__":
+    unittest.main()
+EOF_PY
+
+cat > "${TARGET}/package.json" <<'EOF_JSON'
+{
+  "name": "cross-stack-rename-selection",
+  "private": true
+}
+EOF_JSON
+
+cat > "${TARGET}/apps/node/index.js" <<'EOF_JS'
+console.log("node baseline");
+EOF_JS
+
 (
   cd "${TARGET}"
   git init -q
@@ -21,13 +85,19 @@ bash "${ROOT}/scripts/bootstrap-new-project.sh" \
 
 (
   cd "${TARGET}"
-  git mv "services/python-hello/main.py" "services/node-hello/migrated-main.js"
+  git mv "apps/python/main.py" "apps/node/migrated-main.js"
 )
 
 set +e
 (cd "${TARGET}" && bash ./scripts/check.sh --stacks auto --changed-only > "${LOG_FILE}")
 _status=$?
 set -e
+
+if [[ "${_status}" -ne 0 ]]; then
+  echo "[case-30] check.sh failed unexpectedly" >&2
+  cat "${LOG_FILE}" >&2
+  exit 1
+fi
 
 if ! grep -Eq "\\[check\\] selected_stacks=(python,node|node,python)" "${LOG_FILE}"; then
   echo "[case-30] changed-only selection missed rename source stack" >&2

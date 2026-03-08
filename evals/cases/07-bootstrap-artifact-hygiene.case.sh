@@ -25,3 +25,20 @@ if [[ -d "${TARGET}/evals/results" ]] && find "${TARGET}/evals/results" -type f 
   echo "[case-07] bootstrap output contains eval result artifacts" >&2
   exit 1
 fi
+
+for required_dir in apps packages tests infra; do
+  if [[ ! -d "${TARGET}/${required_dir}" ]]; then
+    echo "[case-07] bootstrap output is missing required root scaffold dir: ${required_dir}" >&2
+    exit 1
+  fi
+done
+
+if [[ -d "${TARGET}/services" ]]; then
+  echo "[case-07] bootstrap output should not create services/" >&2
+  exit 1
+fi
+
+if [[ -d "${TARGET}/examples" ]]; then
+  echo "[case-07] bootstrap output should not copy examples/" >&2
+  exit 1
+fi

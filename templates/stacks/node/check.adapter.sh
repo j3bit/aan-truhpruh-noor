@@ -35,10 +35,58 @@ while [[ $# -gt 0 ]]; do
 done
 
 cd "${PROJECT_DIR}"
+PROJECT_DIR="$(pwd -P)"
 
-if [[ ! -f package.json ]]; then
-  echo "[node-check] ERROR: package.json not found in ${PROJECT_DIR}" >&2
-  exit 2
+collect_nested_package_dirs() {
+  local dir=""
+  for dir in apps packages tests; do
+    [[ -d "${dir}" ]] || continue
+    find "${dir}" -type f -name 'package.json' -not -path '*/node_modules/*' -exec dirname {} \;
+  done | sort -u
+}
+
+collect_product_js_files() {
+  local dir=""
+  for dir in apps packages tests; do
+    [[ -d "${dir}" ]] || continue
+    find "${dir}" -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.mjs' -o -name '*.cjs' \) -not -path '*/node_modules/*'
+  done | sort
+}
+
+collect_product_test_files() {
+  local dir=""
+  for dir in apps packages tests; do
+    [[ -d "${dir}" ]] || continue
+    find "${dir}" -type f \( -name '*.test.js' -o -name '*.test.mjs' -o -name '*.test.cjs' \) -not -path '*/node_modules/*'
+  done | sort
+}
+
+HAS_ROOT_PACKAGE=0
+[[ -f package.json ]] && HAS_ROOT_PACKAGE=1
+
+declare -a PACKAGE_DIRS=()
+declare -a JS_FILES=()
+declare -a TEST_FILES=()
+
+if [[ "${HAS_ROOT_PACKAGE}" -eq 1 ]]; then
+  PACKAGE_DIRS=(".")
+else
+  while IFS= read -r dir; do
+    [[ -n "${dir}" ]] && PACKAGE_DIRS+=("${dir}")
+  done < <(collect_nested_package_dirs)
+fi
+
+while IFS= read -r file; do
+  [[ -n "${file}" ]] && JS_FILES+=("${file}")
+done < <(collect_product_js_files)
+
+while IFS= read -r file; do
+  [[ -n "${file}" ]] && TEST_FILES+=("${file}")
+done < <(collect_product_test_files)
+
+if [[ "${#PACKAGE_DIRS[@]}" -eq 0 && "${#JS_FILES[@]}" -eq 0 ]]; then
+  echo "[node-check] INFO: no Node product markers found under root/apps/packages/tests; skipping"
+  exit 0
 fi
 
 if ! command -v node >/dev/null 2>&1; then
@@ -46,29 +94,11 @@ if ! command -v node >/dev/null 2>&1; then
   exit 2
 fi
 
-PM=""
-if [[ -f pnpm-lock.yaml ]] && command -v pnpm >/dev/null 2>&1; then
-  PM="pnpm"
-elif [[ -f yarn.lock ]] && command -v yarn >/dev/null 2>&1; then
-  PM="yarn"
-elif command -v npm >/dev/null 2>&1; then
-  PM="npm"
-else
-  echo "[node-check] ERROR: no package manager found (pnpm/yarn/npm)" >&2
-  exit 2
-fi
-
-if [[ "${CHANGED_ONLY}" -eq 1 ]]; then
-  echo "[node-check] INFO: --changed-only currently runs full script-level checks"
-fi
-
 FAILED=0
-RAN_ANY=0
 
 run_step() {
   local name="$1"
   shift
-  RAN_ANY=1
   echo "[node-check] RUN: ${name}"
   if "$@"; then
     echo "[node-check] OK: ${name}"
@@ -78,61 +108,105 @@ run_step() {
   fi
 }
 
-has_script() {
-  local script_name="$1"
-  node -e "const fs=require('node:fs');const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));process.exit(pkg.scripts && Object.prototype.hasOwnProperty.call(pkg.scripts, process.argv[1]) ? 0 : 1)" "$script_name"
-}
-
 run_pkg_script() {
-  local script_name="$1"
-  case "${PM}" in
+  local package_dir="$1"
+  local script_name="$2"
+  local pm=""
+
+  if [[ -f "${package_dir}/pnpm-lock.yaml" ]] && command -v pnpm >/dev/null 2>&1; then
+    pm="pnpm"
+  elif [[ -f "${package_dir}/yarn.lock" ]] && command -v yarn >/dev/null 2>&1; then
+    pm="yarn"
+  elif command -v npm >/dev/null 2>&1; then
+    pm="npm"
+  else
+    echo "[node-check] ERROR: no package manager found for ${package_dir}" >&2
+    return 2
+  fi
+
+  case "${pm}" in
     pnpm)
-      pnpm run "$script_name"
+      (cd "${package_dir}" && pnpm run "${script_name}")
       ;;
     yarn)
-      yarn run "$script_name"
+      (cd "${package_dir}" && yarn run "${script_name}")
       ;;
     npm)
-      npm run --silent "$script_name"
-      ;;
-    *)
-      return 2
+      (cd "${package_dir}" && npm run --silent "${script_name}")
       ;;
   esac
 }
 
-if has_script lint; then
-  run_step "package script: lint" run_pkg_script lint
-fi
-if has_script typecheck; then
-  run_step "package script: typecheck" run_pkg_script typecheck
-fi
-if has_script test; then
-  run_step "package script: test" run_pkg_script test
-fi
+package_has_script() {
+  local package_dir="$1"
+  local script_name="$2"
 
-if [[ "${RAN_ANY}" -eq 0 ]]; then
-  declare -a JS_FILES=()
-  while IFS= read -r file; do
-    [[ -n "${file}" ]] && JS_FILES+=("${file}")
-  done < <(find . -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) -not -path './node_modules/*' | sort)
+  (cd "${package_dir}" && node -e "const fs=require('node:fs');const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));process.exit(pkg.scripts && Object.prototype.hasOwnProperty.call(pkg.scripts, process.argv[1]) ? 0 : 1)" "${script_name}")
+}
 
-  if [[ "${#JS_FILES[@]}" -eq 0 ]]; then
-    echo "[node-check] ERROR: no scripts configured and no JS files found" >&2
-    exit 2
+run_package_checks() {
+  local package_dir="$1"
+  local ran_any=0
+  local pkg_js_files=()
+  local pkg_test_files=()
+  local file=""
+
+  if package_has_script "${package_dir}" lint; then
+    run_step "package script: lint (${package_dir})" run_pkg_script "${package_dir}" lint
+    ran_any=1
+  fi
+  if package_has_script "${package_dir}" typecheck; then
+    run_step "package script: typecheck (${package_dir})" run_pkg_script "${package_dir}" typecheck
+    ran_any=1
+  fi
+  if package_has_script "${package_dir}" test; then
+    run_step "package script: test (${package_dir})" run_pkg_script "${package_dir}" test
+    ran_any=1
   fi
 
+  if [[ "${ran_any}" -eq 1 ]]; then
+    return 0
+  fi
+
+  while IFS= read -r file; do
+    [[ -n "${file}" ]] && pkg_js_files+=("${file}")
+  done < <(find "${package_dir}" -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.mjs' -o -name '*.cjs' \) -not -path '*/node_modules/*' | sort)
+
+  if [[ "${#pkg_js_files[@]}" -gt 0 ]]; then
+    run_step "node syntax check (${package_dir})" node --check "${pkg_js_files[@]}"
+  else
+    echo "[node-check] INFO: no runnable JS files in ${package_dir}; skipping syntax check"
+  fi
+
+  while IFS= read -r file; do
+    [[ -n "${file}" ]] && pkg_test_files+=("${file}")
+  done < <(find "${package_dir}" -type f \( -name '*.test.js' -o -name '*.test.mjs' -o -name '*.test.cjs' \) -not -path '*/node_modules/*' | sort)
+
+  if [[ "${#pkg_test_files[@]}" -gt 0 ]]; then
+    run_step "node test runner (${package_dir})" node --test "${pkg_test_files[@]}"
+  else
+    echo "[node-check] INFO: no Node test files found in ${package_dir}; skipping tests"
+  fi
+}
+
+if [[ "${CHANGED_ONLY}" -eq 1 ]]; then
+  echo "[node-check] INFO: --changed-only currently runs full product-scope checks"
+fi
+
+if [[ "${#PACKAGE_DIRS[@]}" -gt 0 ]]; then
+  for package_dir in "${PACKAGE_DIRS[@]}"; do
+    run_package_checks "${package_dir}"
+  done
+elif [[ "${#JS_FILES[@]}" -gt 0 ]]; then
   run_step "node syntax check" node --check "${JS_FILES[@]}"
 
-  declare -a TEST_FILES=()
-  while IFS= read -r file; do
-    [[ -n "${file}" ]] && TEST_FILES+=("${file}")
-  done < <(find . -type f -name '*.test.js' -not -path './node_modules/*' | sort)
   if [[ "${#TEST_FILES[@]}" -gt 0 ]]; then
     run_step "node test runner" node --test "${TEST_FILES[@]}"
   else
-    echo "[node-check] INFO: no *.test.js files found; test run skipped"
+    echo "[node-check] INFO: no Node test files found; skipping tests"
   fi
+else
+  echo "[node-check] INFO: only TypeScript files without package manifests were found; skipping runtime checks"
 fi
 
 if [[ "${FAILED}" -eq 0 ]]; then

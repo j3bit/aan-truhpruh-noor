@@ -11,8 +11,15 @@ if [[ ! -f "${SCRIPT_DIR}/lib/stack-registry.sh" ]]; then
   exit 2
 fi
 
+if [[ ! -f "${SCRIPT_DIR}/lib/product-root-layout.sh" ]]; then
+  echo "[contracts] ERROR: missing product-root layout library: ${SCRIPT_DIR}/lib/product-root-layout.sh" >&2
+  exit 2
+fi
+
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/lib/stack-registry.sh"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/lib/product-root-layout.sh"
 
 usage() {
   cat <<'USAGE'
@@ -80,15 +87,26 @@ REQUIRED_SKILL_FILES=(
   ".agents/skills/create-trd/references/trd-contract.md"
 )
 REQUIRED_TEMPLATE_FILES=(
+  "apps/README.md"
+  "packages/README.md"
+  "tests/README.md"
+  "tests/integration/README.md"
+  "infra/README.md"
+  "infra/env/README.md"
+  "docs/adr/README.md"
   ".codex/config.toml"
+  "docs/runbook/07-repo-structure.md"
+  "docs/specs/README.md"
   "docs/runbook/03-multi-agent.md"
   "docs/runbook/04-ralph.md"
+  "scripts/align-product-root.sh"
   "scripts/lead-orchestrate.sh"
   "scripts/run-sub-agent.sh"
   "scripts/qa-generate-scenarios.sh"
   "scripts/qa-pipeline.sh"
   "scripts/static-review.sh"
   "scripts/lib/stack-registry.sh"
+  "scripts/lib/product-root-layout.sh"
   "scripts/lib/blackboard.sh"
   "scripts/lib/stage-router.sh"
   ".github/workflows/check.yml"
@@ -132,6 +150,14 @@ for rel_path in "${REQUIRED_TEMPLATE_FILES[@]}"; do
   fi
 done
 
+while IFS= read -r rel_dir; do
+  [[ -n "${rel_dir}" ]] || continue
+  if [[ ! -d "${PROJECT_DIR}/${rel_dir}" ]]; then
+    echo "[contracts] FAIL: missing required product-root directory: ${rel_dir}" >&2
+    FAILED=1
+  fi
+done < <(product_root_required_dirs)
+
 for rel_path in "${REQUIRED_BLACKBOARD_SCHEMA_FILES[@]}"; do
   if [[ ! -f "${PROJECT_DIR}/${rel_path}" ]]; then
     echo "[contracts] FAIL: missing required blackboard schema: ${rel_path}" >&2
@@ -144,6 +170,9 @@ if [[ ! -f "${STACK_REGISTRY_ABS}" ]]; then
   FAILED=1
 elif ! stack_registry_validate "${STACK_REGISTRY_ABS}" "${PROJECT_DIR}"; then
   echo "[contracts] FAIL: invalid stack registry: ${STACK_REGISTRY_ABS#${PROJECT_DIR}/}" >&2
+  FAILED=1
+elif ! product_root_validate_registry_policy "${STACK_REGISTRY_ABS}"; then
+  echo "[contracts] FAIL: stack registry must use product-root paths only: ${STACK_REGISTRY_ABS#${PROJECT_DIR}/}" >&2
   FAILED=1
 fi
 
@@ -215,6 +244,11 @@ validate_json_file() {
 
 if ! grep -qi "Trace logging required" "${PROCESS_RULES_FILE}"; then
   echo "[contracts] FAIL: tasks/process-rules.md must include 'Trace logging required'" >&2
+  FAILED=1
+fi
+
+if ! grep -qi "Product-root workspace" "${PROCESS_RULES_FILE}"; then
+  echo "[contracts] FAIL: tasks/process-rules.md must include 'Product-root workspace'" >&2
   FAILED=1
 fi
 

@@ -5,6 +5,14 @@
 This repository is an AI-first engineering bootstrap template.
 All contributors (human and AI agents) must treat process artifacts as first-class code.
 
+## Product Workspace Policy
+
+1. Generated and converted projects use the repository root (`.`) as the product workspace.
+2. Default product code must not live under `services/*`.
+3. `examples/` are verification assets only and must not be treated as live product code.
+4. Core AI process contracts remain first-class at the root, especially `tasks/`, `.agents/`, `.blackboard/`, `.orchestration/`, and `.github/`.
+5. Preferred product root layout is centered on `apps/`, `packages/`, `tests/`, `docs/`, `infra/`, `scripts/`, `tasks/`, `.agents/`, `.blackboard/`, `.orchestration/`, and `.github/`.
+
 ## Single Source Of Truth (SSOT)
 
 Use these files as the canonical source of state:
@@ -43,7 +51,7 @@ Generated project operations:
 
 - Gate entrypoint: `./scripts/check.sh --stacks <csv|auto>`
 - Changed-only gate: `./scripts/check.sh --stacks <csv|auto> --changed-only`
-- Bootstrap a new repo: `./scripts/bootstrap-new-project.sh --name <project-name> --stacks <comma-separated-stack-list>`
+- Bootstrap a new repo (repo root becomes the product workspace): `./scripts/bootstrap-new-project.sh --name <project-name> --stacks <comma-separated-stack-list>`
 - Migrate legacy single-stack contracts: `./scripts/migrate-polyglot.sh --project-dir <path>`
 
 Template maintenance operations (run in this template repository):

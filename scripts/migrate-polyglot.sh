@@ -5,6 +5,14 @@ PROJECT_DIR="${PWD}"
 REGISTRY_PATH="tasks/stacks.json"
 DRY_RUN=0
 
+if [[ ! -f "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/product-root-layout.sh" ]]; then
+  echo "[migrate-polyglot] ERROR: missing layout helper" >&2
+  exit 2
+fi
+
+# shellcheck source=/dev/null
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/lib/product-root-layout.sh"
+
 usage() {
   cat <<'USAGE'
 Usage:
@@ -31,32 +39,6 @@ error() {
 
 info() {
   echo "[migrate-polyglot] $*"
-}
-
-default_owned_paths_json() {
-  local stack="$1"
-  case "${stack}" in
-    python)
-      cat <<'EOF_JSON'
-["**/*.py", "pyproject.toml", "requirements*.txt", "setup.py"]
-EOF_JSON
-      ;;
-    node)
-      cat <<'EOF_JSON'
-["**/*.js", "**/*.mjs", "**/*.cjs", "**/*.ts", "**/*.tsx", "package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"]
-EOF_JSON
-      ;;
-    go)
-      cat <<'EOF_JSON'
-["**/*.go", "go.mod", "go.sum"]
-EOF_JSON
-      ;;
-    *)
-      cat <<'EOF_JSON'
-["**/*"]
-EOF_JSON
-      ;;
-  esac
 }
 
 ensure_stack_adapter() {
@@ -180,6 +162,7 @@ if [[ ! -d "${PROJECT_DIR}" ]]; then
   exit 2
 fi
 PROJECT_DIR="$(cd "${PROJECT_DIR}" && pwd -P)"
+product_root_ensure_scaffold "${PROJECT_DIR}"
 
 if [[ "${REGISTRY_PATH}" == /* ]]; then
   REGISTRY_ABS="${REGISTRY_PATH}"
@@ -417,7 +400,7 @@ registry_tmp="${TMP_DIR}/stacks.json"
   echo '  "stacks": ['
   for idx in "${!STACK_NAMES[@]}"; do
     stack="${STACK_NAMES[$idx]}"
-    owned_paths_json="$(default_owned_paths_json "${stack}")"
+    owned_paths_json="$(product_root_default_owned_paths_json "${stack}")"
     echo '    {'
     echo "      \"name\": \"${stack}\","
     echo "      \"adapter\": \"templates/stacks/${stack}/check.adapter.sh\","
