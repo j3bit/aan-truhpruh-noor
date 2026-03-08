@@ -163,6 +163,12 @@ if [[ ! -d "${PROJECT_DIR}" ]]; then
 fi
 PROJECT_DIR="$(cd "${PROJECT_DIR}" && pwd -P)"
 
+TASKS_DIR="${PROJECT_DIR}/tasks"
+if [[ ! -d "${TASKS_DIR}" ]]; then
+  error "missing tasks directory: ${TASKS_DIR}"
+  exit 1
+fi
+
 if [[ "${DRY_RUN}" -eq 1 ]]; then
   info "WOULD_ENSURE product-root scaffold directories"
 else
@@ -179,12 +185,6 @@ if [[ "${REGISTRY_ABS}" == "${PROJECT_DIR}/"* ]]; then
   REGISTRY_REL="${REGISTRY_ABS#${PROJECT_DIR}/}"
 else
   REGISTRY_REL="${REGISTRY_ABS}"
-fi
-
-TASKS_DIR="${PROJECT_DIR}/tasks"
-if [[ ! -d "${TASKS_DIR}" ]]; then
-  error "missing tasks directory: ${TASKS_DIR}"
-  exit 1
 fi
 
 TMP_DIR="$(mktemp -d)"
