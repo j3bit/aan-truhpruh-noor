@@ -69,6 +69,28 @@ collect_test_targets() {
   done
 }
 
+collect_python_test_files() {
+  local dir=""
+  for dir in apps packages tests; do
+    [[ -d "${dir}" ]] || continue
+    find "${dir}" -type f \( -name 'test*.py' -o -name '*_test.py' \)
+  done | sort
+}
+
+collect_unittest_specs() {
+  local dir=""
+  local pattern=""
+
+  for pattern in 'test*.py' '*_test.py'; do
+    for dir in apps packages tests; do
+      [[ -d "${dir}" ]] || continue
+      find "${dir}" -type f -name "${pattern}" -exec dirname {} \;
+    done | sort -u | while IFS= read -r test_dir; do
+      [[ -n "${test_dir}" ]] && printf '%s\t%s\n' "${pattern}" "${test_dir}"
+    done
+  done
+}
+
 if ! has_python_markers; then
   echo "[python-check] INFO: no Python product markers found under root/apps/packages/tests; skipping"
   exit 0
@@ -86,6 +108,8 @@ fi
 FAILED=0
 declare -a CODE_DIRS=()
 declare -a TEST_TARGETS=()
+declare -a PYTHON_TEST_FILES=()
+declare -a UNITTEST_SPECS=()
 declare -a CHANGED_FILES=()
 
 while IFS= read -r dir; do
@@ -95,6 +119,14 @@ done < <(collect_python_dirs)
 while IFS= read -r dir; do
   [[ -n "${dir}" ]] && TEST_TARGETS+=("${dir}")
 done < <(collect_test_targets)
+
+while IFS= read -r file; do
+  [[ -n "${file}" ]] && PYTHON_TEST_FILES+=("${file}")
+done < <(collect_python_test_files)
+
+while IFS=$'\t' read -r pattern test_dir; do
+  [[ -n "${pattern}" && -n "${test_dir}" ]] && UNITTEST_SPECS+=("${pattern}:${test_dir}")
+done < <(collect_unittest_specs)
 
 if [[ "${CHANGED_ONLY}" -eq 1 ]] && command -v git >/dev/null 2>&1; then
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -144,18 +176,17 @@ else
   echo "[python-check] INFO: no Python source directories found; skipping compileall"
 fi
 
-HAS_TESTS=0
-if find apps packages tests -type f \( -name 'test*.py' -o -name '*_test.py' \) 2>/dev/null | grep -q .; then
-  HAS_TESTS=1
-fi
-
-if [[ "${HAS_TESTS}" -eq 1 ]]; then
+if [[ "${#PYTHON_TEST_FILES[@]}" -gt 0 ]]; then
   if command -v pytest >/dev/null 2>&1; then
     run_step "pytest" pytest -q "${TEST_TARGETS[@]}"
-  elif [[ -d tests ]] && find tests -type f \( -name 'test*.py' -o -name '*_test.py' \) -print -quit | grep -q .; then
-    run_step "unittest discovery" "${PYTHON_BIN}" -m unittest discover -s tests -v
+  elif [[ "${#UNITTEST_SPECS[@]}" -gt 0 ]]; then
+    for spec in "${UNITTEST_SPECS[@]}"; do
+      pattern="${spec%%:*}"
+      test_dir="${spec#*:}"
+      run_step "unittest discovery (${test_dir}, ${pattern})" "${PYTHON_BIN}" -m unittest discover -s "${test_dir}" -p "${pattern}" -v
+    done
   else
-    echo "[python-check] INFO: Python tests exist outside tests/ and pytest is unavailable; skipping test execution"
+    echo "[python-check] INFO: Python tests were found but no runnable unittest discovery targets were derived; skipping test execution"
   fi
 else
   echo "[python-check] INFO: no Python tests found; skipping test execution"

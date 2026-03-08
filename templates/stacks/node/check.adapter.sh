@@ -70,11 +70,11 @@ declare -a TEST_FILES=()
 
 if [[ "${HAS_ROOT_PACKAGE}" -eq 1 ]]; then
   PACKAGE_DIRS=(".")
-else
-  while IFS= read -r dir; do
-    [[ -n "${dir}" ]] && PACKAGE_DIRS+=("${dir}")
-  done < <(collect_nested_package_dirs)
 fi
+
+while IFS= read -r dir; do
+  [[ -n "${dir}" ]] && PACKAGE_DIRS+=("${dir}")
+done < <(collect_nested_package_dirs)
 
 while IFS= read -r file; do
   [[ -n "${file}" ]] && JS_FILES+=("${file}")
