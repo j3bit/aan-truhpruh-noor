@@ -18,7 +18,7 @@ Generated or converted projects are expected to use the repository root as the p
 ```bash
 ./scripts/validate-contracts.sh --project-dir .
 ./scripts/smoke-test.sh
-./evals/run-evals.sh
+./evals/run-evals.sh --profile smoke
 ```
 
 2. Bootstrap a new project:
@@ -51,7 +51,7 @@ The generated repository root is the product workspace. Do not create a default 
 9. Run QA + static hard gate (`scripts/qa-pipeline.sh`)
 10. Pass gate (`scripts/check.sh`) (includes contract validation)
 11. Diff-first review and merge in dependency order
-12. Run evals (`evals/run-evals.sh`)
+12. Run evals (`./evals/run-evals.sh --profile smoke` for routine iteration, `./evals/run-evals.sh --profile full` before merging template or orchestration changes)
 
 Local orchestration command:
 

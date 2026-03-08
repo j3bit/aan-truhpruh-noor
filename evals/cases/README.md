@@ -16,7 +16,19 @@ test -f AGENTS.md
 Then run:
 
 ```bash
-./evals/run-evals.sh
+./evals/run-evals.sh --profile smoke
+```
+
+Built-in profiles for the template suite:
+
+- `smoke`: core contract/bootstrap/registry regressions.
+- `orchestration`: `smoke` plus orchestration, QA/static, worker-result, and CI path regressions.
+- `full`: `orchestration` plus trace fallback and stress-path regressions.
+
+Inspect the selected cases without executing them:
+
+```bash
+./evals/run-evals.sh --profile orchestration --list-cases
 ```
 
 The runner writes JSONL results to `evals/results/<timestamp>.jsonl` with fields:

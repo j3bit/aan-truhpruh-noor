@@ -49,12 +49,17 @@ jobs:
         run: |
           ./scripts/check.sh --stacks auto
 
-      - name: Run evals (hybrid)
-        run: ./evals/run-evals.sh
+      - name: Run evals (smoke)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: ./evals/run-evals.sh --profile smoke
 
-      - name: Run evals (local-only)
+      - name: Run evals (full, hybrid)
         if: ${{ github.event_name == 'push' }}
-        run: ./evals/run-evals.sh --trace-mode local-only
+        run: ./evals/run-evals.sh --profile full
+
+      - name: Run evals (full, local-only)
+        if: ${{ github.event_name == 'push' }}
+        run: ./evals/run-evals.sh --profile full --trace-mode local-only
 
   qa-and-static:
     needs: quality-gate

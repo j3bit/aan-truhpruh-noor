@@ -4,13 +4,19 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 TRACE_HELPER_DIR="${REPO_ROOT}/evals/lib"
+DEFAULT_CASES_DIR="${REPO_ROOT}/evals/cases"
 
-CASES_DIR="${REPO_ROOT}/evals/cases"
+source "${TRACE_HELPER_DIR}/case-profiles.sh"
+
+CASES_DIR="${DEFAULT_CASES_DIR}"
 RESULTS_DIR="${REPO_ROOT}/evals/results"
 TRACE_MODE="hybrid"
 MAX_RETRIES=3
 MAX_LOOP_COUNT=8
 TRACE_TIMEOUT_SECONDS=90
+PROFILE="full"
+PROFILE_EXPLICIT=false
+LIST_CASES=false
 
 usage() {
   cat <<'USAGE'
@@ -19,10 +25,12 @@ Usage: ./evals/run-evals.sh [options]
 Options:
   --cases-dir <path>
   --results-dir <path>
+  --profile <smoke|orchestration|full>
   --trace-mode <hybrid|trace-only|local-only>
   --max-retries <int>
   --max-loop-count <int>
   --trace-timeout-seconds <int>
+  --list-cases
 
 Result format (JSONL):
   {"case_id":"...","passed":true|false,"loop_count":0,"retries":0,"unexpected_files":0,"skill_triggered":false}
@@ -49,6 +57,12 @@ while [[ $# -gt 0 ]]; do
       RESULTS_DIR="$2"
       shift 2
       ;;
+    --profile)
+      [[ $# -ge 2 ]] || { error "--profile requires a value"; exit 2; }
+      PROFILE="$2"
+      PROFILE_EXPLICIT=true
+      shift 2
+      ;;
     --trace-mode)
       [[ $# -ge 2 ]] || { error "--trace-mode requires a value"; exit 2; }
       TRACE_MODE="$2"
@@ -68,6 +82,10 @@ while [[ $# -gt 0 ]]; do
       [[ $# -ge 2 ]] || { error "--trace-timeout-seconds requires a value"; exit 2; }
       TRACE_TIMEOUT_SECONDS="$2"
       shift 2
+      ;;
+    --list-cases)
+      LIST_CASES=true
+      shift
       ;;
     -h|--help)
       usage
@@ -89,6 +107,11 @@ case "${TRACE_MODE}" in
     exit 2
     ;;
 esac
+
+if ! is_known_eval_profile "${PROFILE}"; then
+  error "Unsupported profile '${PROFILE}'. Use: smoke, orchestration, full"
+  exit 2
+fi
 
 is_integer "${MAX_RETRIES}" || { error "--max-retries must be an integer"; exit 2; }
 is_integer "${MAX_LOOP_COUNT}" || { error "--max-loop-count must be an integer"; exit 2; }
@@ -155,6 +178,46 @@ write_result() {
 
   printf '{"case_id":"%s","passed":%s,"loop_count":%s,"retries":%s,"unexpected_files":%s,"skill_triggered":%s}\n' \
     "$case_id" "$pass_flag" "$loop_count" "$retries" "$unexpected_files" "$skill_triggered" >> "${RESULT_FILE}"
+}
+
+cases_dir_has_scripts() {
+  local case_script
+  for case_script in "${CASES_DIR}"/*.case.sh; do
+    [[ -e "${case_script}" ]] && return 0
+  done
+  return 1
+}
+
+collect_selected_case_scripts() {
+  local case_file
+  local case_script
+
+  if ! cases_dir_has_scripts; then
+    return 0
+  fi
+
+  if [[ "${CASES_DIR}" != "${DEFAULT_CASES_DIR}" ]] && [[ "${PROFILE_EXPLICIT}" != "true" ]]; then
+    for case_script in "${CASES_DIR}"/*.case.sh; do
+      [[ -e "${case_script}" ]] || continue
+      printf '%s\n' "${case_script}"
+    done
+    return 0
+  fi
+
+  while IFS= read -r case_file; do
+    [[ -n "${case_file}" ]] || continue
+    case_script="${CASES_DIR}/${case_file}"
+    if [[ -f "${case_script}" ]]; then
+      printf '%s\n' "${case_script}"
+      continue
+    fi
+    if [[ "${CASES_DIR}" == "${DEFAULT_CASES_DIR}" ]]; then
+      error "profile '${PROFILE}' is missing case '${case_file}'"
+      return 1
+    fi
+  done < <(print_eval_profile_cases "${PROFILE}")
+
+  return 0
 }
 
 run_case_script() {
@@ -233,13 +296,36 @@ run_case_script() {
   rm -f "${before_file}" "${after_file}" "${new_files_file}" "${meta_file}"
 }
 
+echo "[evals] Profile: ${PROFILE}"
+
 FOUND_EXTERNAL_CASES=0
-for case_script in "${CASES_DIR}"/*.case.sh; do
-  if [[ ! -e "${case_script}" ]]; then
-    break
+selected_case_scripts=()
+if cases_dir_has_scripts; then
+  while IFS= read -r case_script; do
+    [[ -n "${case_script}" ]] || continue
+    selected_case_scripts+=("${case_script}")
+  done < <(collect_selected_case_scripts)
+
+  if [[ "${#selected_case_scripts[@]}" -eq 0 ]]; then
+    error "no cases matched profile '${PROFILE}' under ${CASES_DIR}"
+    exit 2
   fi
 
   FOUND_EXTERNAL_CASES=1
+fi
+
+if [[ "${LIST_CASES}" == "true" ]]; then
+  if [[ "${FOUND_EXTERNAL_CASES}" -eq 0 ]]; then
+    error "--list-cases requires at least one *.case.sh file under ${CASES_DIR}"
+    exit 2
+  fi
+  for case_script in "${selected_case_scripts[@]}"; do
+    basename "${case_script}" .case.sh
+  done
+  exit 0
+fi
+
+for case_script in "${selected_case_scripts[@]}"; do
   case_id="$(basename "${case_script}" .case.sh)"
   TOTAL=$((TOTAL + 1))
   run_case_script "${case_script}" "${case_id}"

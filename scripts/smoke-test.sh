@@ -103,6 +103,7 @@ run_bootstrap_check() {
   assert_file "${target}/.agents/skills/create-trd/SKILL.md"
   assert_file "${target}/.agents/skills/create-trd/references/trd-contract.md"
   assert_file "${target}/evals/run-evals.sh"
+  assert_file "${target}/evals/lib/case-profiles.sh"
   assert_file "${target}/evals/lib/collect-trace.sh"
   assert_file "${target}/evals/lib/parse-trace.sh"
   assert_file "${target}/evals/cases/01-required-artifacts.case.sh"
