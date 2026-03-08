@@ -11,21 +11,21 @@ if ! command -v go >/dev/null 2>&1; then
   exit 0
 fi
 
-mkdir -p "${TARGET}/apps/svc"
+mkdir -p "${TARGET}/apps/\$(printf injected)"
 
 cat > "${TARGET}/go.work" <<'EOF'
 go 1.22
 
-use ./apps/svc
+use "./apps/$(printf injected)"
 EOF
 
-cat > "${TARGET}/apps/svc/go.mod" <<'EOF'
-module example.com/svc
+cat > "${TARGET}/apps/\$(printf injected)/go.mod" <<'EOF'
+module example.com/injected
 
 go 1.22
 EOF
 
-cat > "${TARGET}/apps/svc/main.go" <<'EOF'
+cat > "${TARGET}/apps/\$(printf injected)/main.go" <<'EOF'
 package main
 
 func main() {}
@@ -33,5 +33,5 @@ EOF
 
 bash "${ROOT}/templates/stacks/go/check.adapter.sh" --project-dir "${TARGET}" > "${TMP_DIR}/adapter.log"
 
-grep -q "go test ./... (./apps/svc)" "${TMP_DIR}/adapter.log"
-grep -q "go vet ./... (./apps/svc)" "${TMP_DIR}/adapter.log"
+grep -q 'go test ./... (./apps/$(printf injected))' "${TMP_DIR}/adapter.log"
+grep -q 'go vet ./... (./apps/$(printf injected))' "${TMP_DIR}/adapter.log"

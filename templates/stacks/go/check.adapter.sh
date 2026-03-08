@@ -147,6 +147,15 @@ run_step() {
   fi
 }
 
+run_in_dir() {
+  local dir="$1"
+  shift
+  (
+    cd -- "${dir}"
+    "$@"
+  )
+}
+
 run_module_checks() {
   local module_dir="$1"
   local module_go_files=()
@@ -172,8 +181,8 @@ run_module_checks() {
     echo "[go-check] OK: gofmt (${module_dir})"
   fi
 
-  run_step "go test ./... (${module_dir})" bash -lc "cd \"${module_dir}\" && go test ./..."
-  run_step "go vet ./... (${module_dir})" bash -lc "cd \"${module_dir}\" && go vet ./..."
+  run_step "go test ./... (${module_dir})" run_in_dir "${module_dir}" go test ./...
+  run_step "go vet ./... (${module_dir})" run_in_dir "${module_dir}" go vet ./...
 }
 
 for module_dir in "${MODULE_DIRS[@]}"; do
