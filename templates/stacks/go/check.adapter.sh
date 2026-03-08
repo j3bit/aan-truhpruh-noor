@@ -42,10 +42,52 @@ fi
 cd -- "${PROJECT_DIR}"
 PROJECT_DIR="$(pwd -P)"
 
-collect_go_modules() {
+collect_go_files() {
+  local dir=""
+  for dir in apps packages tests; do
+    [[ -d "${dir}" ]] || continue
+    find "${dir}" -type f -name '*.go' -not -path '*/vendor/*'
+  done | sort
+}
+
+has_go_markers() {
   local dir=""
 
   if [[ -f go.mod || -f go.work ]]; then
+    return 0
+  fi
+
+  for dir in apps packages tests; do
+    [[ -d "${dir}" ]] || continue
+    if find "${dir}" -type f \( -name '*.go' -o -name 'go.mod' \) -print -quit | grep -q .; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+collect_go_modules() {
+  local dir=""
+
+  if [[ -f go.work ]]; then
+    go work edit -json | perl -MJSON::PP -e '
+      use strict;
+      use warnings;
+
+      local $/;
+      my $obj = decode_json(<>);
+      for my $entry (@{$obj->{Use} // []}) {
+        next unless ref($entry) eq "HASH";
+        my $path = $entry->{DiskPath};
+        next unless defined $path && !ref($path) && $path ne "";
+        print $path, "\n";
+      }
+    ' | sed 's#/$##' | sed '/^$/d' | sort -u
+    return 0
+  fi
+
+  if [[ -f go.mod ]]; then
     printf '.\n'
     return 0
   fi
@@ -56,26 +98,13 @@ collect_go_modules() {
   done | sort -u
 }
 
-collect_go_files() {
-  local dir=""
-  for dir in apps packages tests; do
-    [[ -d "${dir}" ]] || continue
-    find "${dir}" -type f -name '*.go' -not -path '*/vendor/*'
-  done | sort
-}
-
-declare -a MODULE_DIRS=()
 declare -a GO_FILES=()
-
-while IFS= read -r dir; do
-  [[ -n "${dir}" ]] && MODULE_DIRS+=("${dir}")
-done < <(collect_go_modules)
 
 while IFS= read -r file; do
   [[ -n "${file}" ]] && GO_FILES+=("${file}")
 done < <(collect_go_files)
 
-if [[ "${#MODULE_DIRS[@]}" -eq 0 && "${#GO_FILES[@]}" -eq 0 ]]; then
+if ! has_go_markers; then
   echo "[go-check] INFO: no Go product markers found under root/apps/packages/tests; skipping"
   exit 0
 fi
@@ -84,6 +113,11 @@ if ! command -v go >/dev/null 2>&1; then
   echo "[go-check] ERROR: go is not installed" >&2
   exit 2
 fi
+
+declare -a MODULE_DIRS=()
+while IFS= read -r dir; do
+  [[ -n "${dir}" ]] && MODULE_DIRS+=("${dir}")
+done < <(collect_go_modules)
 
 if [[ "${#MODULE_DIRS[@]}" -eq 0 && "${#GO_FILES[@]}" -gt 0 ]]; then
   echo "[go-check] ERROR: Go files found but no go.mod/go.work was found under root/apps/packages/tests" >&2

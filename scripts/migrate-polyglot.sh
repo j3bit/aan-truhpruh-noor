@@ -162,7 +162,12 @@ if [[ ! -d "${PROJECT_DIR}" ]]; then
   exit 2
 fi
 PROJECT_DIR="$(cd "${PROJECT_DIR}" && pwd -P)"
-product_root_ensure_scaffold "${PROJECT_DIR}"
+
+if [[ "${DRY_RUN}" -eq 1 ]]; then
+  info "WOULD_ENSURE product-root scaffold directories"
+else
+  product_root_ensure_scaffold "${PROJECT_DIR}"
+fi
 
 if [[ "${REGISTRY_PATH}" == /* ]]; then
   REGISTRY_ABS="${REGISTRY_PATH}"
