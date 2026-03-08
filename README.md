@@ -1,6 +1,7 @@
 # __PROJECT_NAME__ AI Coding Bootstrap Template
 
 This repository is a stack-neutral bootstrap template for running AI coding workflows with consistent process controls.
+Generated or converted projects are expected to use the repository root as the product workspace.
 
 ## What This Template Provides
 
@@ -8,7 +9,7 @@ This repository is a stack-neutral bootstrap template for running AI coding work
 - Procedure layer: `AGENTS.md` operating policy
 - Execution layer: lead-orchestrated Codex multi-agent workflow + stack adapters
 - Quality layer: CI gates + eval runner + runbooks
-- Bootstrap UX: script to generate a new repository with chosen starter stacks
+- Bootstrap UX: script to generate a new repository whose root is the product workspace
 
 ## Quickstart (10 Minutes)
 
@@ -26,12 +27,14 @@ This repository is a stack-neutral bootstrap template for running AI coding work
 ./scripts/bootstrap-new-project.sh --name my-app --stacks python,node
 ```
 
-3. Enter the generated project and run gate:
+3. Enter the generated project root and run gate:
 
 ```bash
 cd ./my-app
 ./scripts/check.sh --stacks auto
 ```
+
+The generated repository root is the product workspace. Do not create a default `services/*` product layout.
 
 4. Create your first PRD/TRD/task/DAG artifacts from templates in `tasks/templates/`.
 
@@ -69,6 +72,46 @@ Standalone QA hard-gate command:
 ./scripts/qa-pipeline.sh --project-dir . --stacks auto
 ```
 
+## Product Workspace Policy
+
+- Generated and converted projects use the repository root (`.`) as the product workspace.
+- Do not use `services/*` as the default product layout.
+- Keep process contracts at the root: `tasks/`, `.agents/`, `.blackboard/`, `.orchestration/`, `.github/`, and supporting scripts/docs.
+- Treat `examples/` as template verification assets only, not as live product seed code.
+
+## Recommended Product Root Layout
+
+Use this layout in generated or converted product repositories:
+
+```text
+.
+├─ apps/
+├─ packages/
+├─ tests/
+├─ docs/
+├─ infra/
+├─ scripts/
+├─ tasks/
+├─ .agents/
+├─ .blackboard/
+├─ .orchestration/
+└─ .github/
+```
+
+Typical responsibilities:
+
+- `apps/`: deployable applications and entrypoints
+- `packages/`: shared libraries and reusable modules
+- `tests/`: integration, end-to-end, and cross-app verification
+- `docs/`: runbooks, ADRs, product/system specifications
+- `infra/`: environment, deployment, and observability assets
+- `scripts/`: automation and quality gate entrypoints
+- `tasks/`: PRD/TRD/task/DAG contracts
+- `.agents/`, `.blackboard/`, `.orchestration/`: AI workflow policy and runtime state
+- `.github/`: CI and repository automation
+
+See `docs/runbook/07-repo-structure.md` for repository structure guidance and guardrails.
+
 ## PR Automated Review
 
 PR automated review is handled by Codex Web GitHub integration (not GitHub Actions in this template).
@@ -91,7 +134,7 @@ PR automated review is handled by Codex Web GitHub integration (not GitHub Actio
   - worker result contracts: `.orchestration/workers/<task_id>.result.json`
   - integration feedback bundles: `.blackboard/feedback/integration/<task_id>.json`
   - QA scenario artifacts: `.blackboard/artifacts/qa/scenarios-<id>-<slug>.json`
-- `examples/`: stack starter samples
+- `examples/`: verification assets for smoke/eval coverage, not product seed code
 
 ## Core Skills Baseline
 
@@ -111,7 +154,7 @@ This template ships with these SOP skills under `.agents/skills/`:
 ./scripts/check.sh [--stacks <csv|auto>] [--changed-only] [--project-dir <path>] [--registry <path>]
 ```
 
-`--project-dir` is useful when running the gate from the template root against a generated project path.
+`--project-dir` is useful when running the gate from the template root against another repository root.
 
 Contract rules validated by the gate:
 

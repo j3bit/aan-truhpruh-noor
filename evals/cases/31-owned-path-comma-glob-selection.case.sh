@@ -21,8 +21,8 @@ cat > "${TARGET}/tasks/stacks.json" <<'EOF_JSON'
       "adapter": "templates/stacks/python/check.adapter.sh",
       "projects": [
         {
-          "path": "services/python-hello",
-          "owned_paths": ["**/*.py"]
+          "path": ".",
+          "owned_paths": ["apps/python/**/*.py", "pyproject.toml"]
         }
       ]
     },
@@ -31,14 +31,44 @@ cat > "${TARGET}/tasks/stacks.json" <<'EOF_JSON'
       "adapter": "templates/stacks/node/check.adapter.sh",
       "projects": [
         {
-          "path": "services/node-hello",
-          "owned_paths": ["**/*.{js,ts}"]
+          "path": ".",
+          "owned_paths": ["apps/node/**/*.{js,ts}", "package.json"]
         }
       ]
     }
   ]
 }
 EOF_JSON
+
+mkdir -p "${TARGET}/apps/python" "${TARGET}/apps/node" "${TARGET}/packages" "${TARGET}/tests" "${TARGET}/infra"
+
+cat > "${TARGET}/apps/python/main.py" <<'EOF_PY'
+print("python baseline")
+EOF_PY
+
+cat > "${TARGET}/test_smoke.py" <<'EOF_PY'
+import unittest
+
+
+class SmokeTest(unittest.TestCase):
+    def test_truth(self) -> None:
+        self.assertTrue(True)
+
+
+if __name__ == "__main__":
+    unittest.main()
+EOF_PY
+
+cat > "${TARGET}/package.json" <<'EOF_JSON'
+{
+  "name": "owned-path-comma-glob-selection",
+  "private": true
+}
+EOF_JSON
+
+cat > "${TARGET}/apps/node/index.js" <<'EOF_JS'
+console.log("node baseline");
+EOF_JS
 
 (
   cd "${TARGET}"
@@ -47,7 +77,7 @@ EOF_JSON
   git -c user.name='eval' -c user.email='eval@example.com' commit -q -m "baseline"
 )
 
-cat > "${TARGET}/services/node-hello/new-file.ts" <<'EOF_TS'
+cat > "${TARGET}/apps/node/new-file.ts" <<'EOF_TS'
 export const value = 1;
 EOF_TS
 

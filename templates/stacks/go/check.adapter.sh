@@ -42,33 +42,95 @@ fi
 cd -- "${PROJECT_DIR}"
 PROJECT_DIR="$(pwd -P)"
 
+collect_go_files() {
+  local dir=""
+  for dir in apps packages tests; do
+    [[ -d "${dir}" ]] || continue
+    find "${dir}" -type f -name '*.go' -not -path '*/vendor/*'
+  done | sort
+}
+
+has_go_markers() {
+  local dir=""
+
+  if [[ -f go.mod || -f go.work ]]; then
+    return 0
+  fi
+
+  for dir in apps packages tests; do
+    [[ -d "${dir}" ]] || continue
+    if find "${dir}" -type f \( -name '*.go' -o -name 'go.mod' \) -print -quit | grep -q .; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+collect_go_modules() {
+  local dir=""
+
+  if [[ -f go.work ]]; then
+    go work edit -json | perl -MJSON::PP -e '
+      use strict;
+      use warnings;
+
+      local $/;
+      my $obj = decode_json(<>);
+      for my $entry (@{$obj->{Use} // []}) {
+        next unless ref($entry) eq "HASH";
+        my $path = $entry->{DiskPath};
+        next unless defined $path && !ref($path) && $path ne "";
+        print $path, "\n";
+      }
+    ' | sed 's#/$##' | sed '/^$/d' | sort -u
+    return 0
+  fi
+
+  if [[ -f go.mod ]]; then
+    printf '.\n'
+    return 0
+  fi
+
+  for dir in apps packages tests; do
+    [[ -d "${dir}" ]] || continue
+    find "${dir}" -type f -name 'go.mod' -exec dirname {} \;
+  done | sort -u
+}
+
+declare -a GO_FILES=()
+
+while IFS= read -r file; do
+  [[ -n "${file}" ]] && GO_FILES+=("${file}")
+done < <(collect_go_files)
+
+if ! has_go_markers; then
+  echo "[go-check] INFO: no Go product markers found under root/apps/packages/tests; skipping"
+  exit 0
+fi
+
 if ! command -v go >/dev/null 2>&1; then
   echo "[go-check] ERROR: go is not installed" >&2
   exit 2
 fi
 
-if [[ ! -f go.mod ]]; then
-  echo "[go-check] ERROR: go.mod not found in ${PROJECT_DIR}" >&2
+declare -a MODULE_DIRS=()
+while IFS= read -r dir; do
+  [[ -n "${dir}" ]] && MODULE_DIRS+=("${dir}")
+done < <(collect_go_modules)
+
+if [[ "${#MODULE_DIRS[@]}" -eq 0 && "${#GO_FILES[@]}" -gt 0 ]]; then
+  echo "[go-check] ERROR: Go files found but no go.mod/go.work was found under root/apps/packages/tests" >&2
   exit 2
 fi
 
-# Use project-local caches so checks work in sandboxed environments.
 export GOPATH="${PROJECT_DIR}/.cache/go"
 export GOMODCACHE="${GOPATH}/pkg/mod"
 export GOCACHE="${PROJECT_DIR}/.cache/go-build"
 mkdir -p "${GOMODCACHE}" "${GOCACHE}"
 
 if [[ "${CHANGED_ONLY}" -eq 1 ]]; then
-  echo "[go-check] INFO: --changed-only currently runs full checks because package dependencies can span modules"
-fi
-
-declare -a GO_FILES=()
-while IFS= read -r file; do
-  [[ -n "${file}" ]] && GO_FILES+=("${file}")
-done < <(find . -type f -name '*.go' -not -path './vendor/*' | sort)
-if [[ "${#GO_FILES[@]}" -eq 0 ]]; then
-  echo "[go-check] ERROR: no .go files found" >&2
-  exit 2
+  echo "[go-check] INFO: --changed-only currently runs full module checks because Go dependencies can span packages"
 fi
 
 FAILED=0
@@ -85,18 +147,47 @@ run_step() {
   fi
 }
 
-echo "[go-check] RUN: gofmt -l"
-UNFORMATTED="$(gofmt -l "${GO_FILES[@]}")"
-if [[ -n "${UNFORMATTED}" ]]; then
-  echo "[go-check] FAIL: gofmt detected unformatted files:" >&2
-  echo "${UNFORMATTED}" >&2
-  FAILED=1
-else
-  echo "[go-check] OK: gofmt"
-fi
+run_in_dir() {
+  local dir="$1"
+  shift
+  (
+    cd -- "${dir}"
+    "$@"
+  )
+}
 
-run_step "go test ./..." go test ./...
-run_step "go vet ./..." go vet ./...
+run_module_checks() {
+  local module_dir="$1"
+  local module_go_files=()
+  local file=""
+
+  while IFS= read -r file; do
+    [[ -n "${file}" ]] && module_go_files+=("${file}")
+  done < <(cd "${module_dir}" && find . -type f -name '*.go' -not -path './vendor/*' | sort)
+
+  if [[ "${#module_go_files[@]}" -eq 0 ]]; then
+    echo "[go-check] INFO: no .go files found in ${module_dir}; skipping"
+    return 0
+  fi
+
+  echo "[go-check] RUN: gofmt -l (${module_dir})"
+  local unformatted=""
+  unformatted="$(cd "${module_dir}" && gofmt -l "${module_go_files[@]}")"
+  if [[ -n "${unformatted}" ]]; then
+    echo "[go-check] FAIL: gofmt detected unformatted files in ${module_dir}:" >&2
+    echo "${unformatted}" >&2
+    FAILED=1
+  else
+    echo "[go-check] OK: gofmt (${module_dir})"
+  fi
+
+  run_step "go test ./... (${module_dir})" run_in_dir "${module_dir}" go test ./...
+  run_step "go vet ./... (${module_dir})" run_in_dir "${module_dir}" go vet ./...
+}
+
+for module_dir in "${MODULE_DIRS[@]}"; do
+  run_module_checks "${module_dir}"
+done
 
 if [[ "${FAILED}" -eq 0 ]]; then
   exit 0

@@ -6,12 +6,23 @@
       "adapter": "templates/stacks/python/check.adapter.sh",
       "projects": [
         {
-          "path": "examples/python-hello",
+          "path": ".",
           "owned_paths": [
-            "**/*.py",
+            "apps/**/*.py",
+            "packages/**/*.py",
+            "tests/**/*.py",
             "pyproject.toml",
             "requirements*.txt",
-            "setup.py"
+            "setup.py",
+            "apps/**/pyproject.toml",
+            "packages/**/pyproject.toml",
+            "tests/**/pyproject.toml",
+            "apps/**/requirements*.txt",
+            "packages/**/requirements*.txt",
+            "tests/**/requirements*.txt",
+            "apps/**/setup.py",
+            "packages/**/setup.py",
+            "tests/**/setup.py"
           ]
         }
       ]
@@ -21,17 +32,27 @@
       "adapter": "templates/stacks/node/check.adapter.sh",
       "projects": [
         {
-          "path": "examples/node-hello",
+          "path": ".",
           "owned_paths": [
-            "**/*.js",
-            "**/*.mjs",
-            "**/*.cjs",
-            "**/*.ts",
-            "**/*.tsx",
+            "apps/**/*.{js,jsx,mjs,cjs,ts,tsx}",
+            "packages/**/*.{js,jsx,mjs,cjs,ts,tsx}",
+            "tests/**/*.{js,jsx,mjs,cjs,ts,tsx}",
             "package.json",
             "package-lock.json",
             "pnpm-lock.yaml",
-            "yarn.lock"
+            "yarn.lock",
+            "apps/**/package.json",
+            "packages/**/package.json",
+            "tests/**/package.json",
+            "apps/**/package-lock.json",
+            "packages/**/package-lock.json",
+            "tests/**/package-lock.json",
+            "apps/**/pnpm-lock.yaml",
+            "packages/**/pnpm-lock.yaml",
+            "tests/**/pnpm-lock.yaml",
+            "apps/**/yarn.lock",
+            "packages/**/yarn.lock",
+            "tests/**/yarn.lock"
           ]
         }
       ]
@@ -41,11 +62,20 @@
       "adapter": "templates/stacks/go/check.adapter.sh",
       "projects": [
         {
-          "path": "examples/go-hello",
+          "path": ".",
           "owned_paths": [
-            "**/*.go",
+            "apps/**/*.go",
+            "packages/**/*.go",
+            "tests/**/*.go",
             "go.mod",
-            "go.sum"
+            "go.sum",
+            "go.work",
+            "apps/**/go.mod",
+            "packages/**/go.mod",
+            "tests/**/go.mod",
+            "apps/**/go.sum",
+            "packages/**/go.sum",
+            "tests/**/go.sum"
           ]
         }
       ]

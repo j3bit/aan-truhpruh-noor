@@ -9,7 +9,9 @@ IDEATION -> PRD -> TRD -> task/DAG planning -> DAG orchestration -> atomic execu
 
 Template maintenance commands are documented in `README.md` Quickstart.
 
-Generated project loop (bootstrap output):
+Product repository loop (generated or converted repo root):
+
+The repository root is the working product directory. A default `services/*` layout is out of policy, and `examples/` remain verification assets in the template repository only.
 
 1. (Optional ideation stage) produce ideation artifact at `.blackboard/artifacts/ideation/<4digit>-<slug>.json`.
 2. Create PRD with `create-prd` and save as `tasks/prd-<4digit>-<slug>.md`.

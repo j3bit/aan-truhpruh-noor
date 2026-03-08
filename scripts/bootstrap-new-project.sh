@@ -9,6 +9,14 @@ STACKS_RAW=""
 DEST=""
 FORCE=0
 
+if [[ ! -f "${SCRIPT_DIR}/lib/product-root-layout.sh" ]]; then
+  echo "[bootstrap] ERROR: missing layout helper: ${SCRIPT_DIR}/lib/product-root-layout.sh" >&2
+  exit 2
+fi
+
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/lib/product-root-layout.sh"
+
 usage() {
   cat <<'USAGE'
 Usage:
@@ -32,42 +40,6 @@ error() {
 normalize_stacks() {
   local raw="$1"
   printf '%s\n' "${raw}" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed '/^$/d' | awk '!seen[$0]++'
-}
-
-stack_seed_example_dir() {
-  local stack="$1"
-  case "${stack}" in
-    python) echo "examples/python-hello" ;;
-    node) echo "examples/node-hello" ;;
-    go) echo "examples/go-hello" ;;
-    *) echo "" ;;
-  esac
-}
-
-stack_default_owned_paths_json() {
-  local stack="$1"
-  case "${stack}" in
-    python)
-      cat <<'EOF_JSON'
-["**/*.py", "pyproject.toml", "requirements*.txt", "setup.py"]
-EOF_JSON
-      ;;
-    node)
-      cat <<'EOF_JSON'
-["**/*.js", "**/*.mjs", "**/*.cjs", "**/*.ts", "**/*.tsx", "package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock"]
-EOF_JSON
-      ;;
-    go)
-      cat <<'EOF_JSON'
-["**/*.go", "go.mod", "go.sum"]
-EOF_JSON
-      ;;
-    *)
-      cat <<'EOF_JSON'
-["**/*"]
-EOF_JSON
-      ;;
-  esac
 }
 
 ensure_adapter_for_stack() {
@@ -170,6 +142,7 @@ STACKS=()
 while IFS= read -r stack_name; do
   [[ -n "${stack_name}" ]] && STACKS+=("${stack_name}")
 done < <(normalize_stacks "${STACKS_RAW}")
+
 if [[ "${#STACKS[@]}" -eq 0 ]]; then
   error "No valid stacks were provided"
   exit 2
@@ -186,7 +159,7 @@ if [[ -z "${DEST}" ]]; then
   DEST="$(pwd)/${PROJECT_NAME}"
 fi
 
-if [[ -e "${DEST}" ]] && [[ "${FORCE}" -eq 0 ]]; then
+if [[ -e "${DEST}" && "${FORCE}" -eq 0 ]]; then
   error "Destination already exists. Use --force to allow existing destination: ${DEST}"
   exit 2
 fi
@@ -228,6 +201,10 @@ prune_transient_artifacts() {
 
 copy_item AGENTS.md
 copy_item .gitignore
+copy_item apps
+copy_item packages
+copy_item tests
+copy_item infra
 copy_item tasks
 copy_item scripts
 copy_item templates
@@ -238,38 +215,12 @@ copy_item docs
 copy_item .agents
 copy_item .codex
 copy_item README.md
-copy_item examples
 
 for stack in "${STACKS[@]}"; do
   ensure_adapter_for_stack "${stack}"
 done
 
-if [[ "${#STACKS[@]}" -eq 1 ]]; then
-  stack="${STACKS[0]}"
-  seed_dir="$(stack_seed_example_dir "${stack}")"
-  if [[ -n "${seed_dir}" ]]; then
-    cp -R "${TEMPLATE_ROOT}/${seed_dir}/." "${DEST}/"
-  else
-    echo "# ${PROJECT_NAME}" > "${DEST}/README.${stack}.md"
-    echo "Starter files for stack '${stack}' are not bundled. Add your runtime files." >> "${DEST}/README.${stack}.md"
-  fi
-else
-  for stack in "${STACKS[@]}"; do
-    seed_dir="$(stack_seed_example_dir "${stack}")"
-    service_dir="${DEST}/services/${stack}-hello"
-    mkdir -p "${service_dir}"
-    if [[ -n "${seed_dir}" ]]; then
-      cp -R "${TEMPLATE_ROOT}/${seed_dir}/." "${service_dir}/"
-    else
-      cat > "${service_dir}/README.md" <<EOF_SERVICE
-# ${stack}-hello
-
-This service directory was created automatically for stack '${stack}'.
-Add runtime/bootstrap files for this stack.
-EOF_SERVICE
-    fi
-  done
-fi
+product_root_ensure_scaffold "${DEST}"
 
 SAFE_PROJECT_NAME="$(printf '%s' "${PROJECT_NAME}" | sed 's/[&/]/\\&/g')"
 
@@ -277,57 +228,17 @@ while IFS= read -r -d '' file; do
   sed -i.bak "s/__PROJECT_NAME__/${SAFE_PROJECT_NAME}/g" "${file}" && rm -f "${file}.bak"
 done < <(find "${DEST}" -type f \( -name '*.md' -o -name '*.sh' -o -name '*.yml' -o -name '*.yaml' -o -name '*.toml' -o -name '*.txt' \) -print0)
 
+product_root_write_stack_registry "${DEST}" "${STACKS[@]}"
+
 while IFS= read -r -d '' file; do
   chmod +x "${file}"
-done < <(find "${DEST}" -type f \( -name '*.sh' \) -print0)
-
-# Generate tasks/stacks.json for the bootstrapped project.
-STACKS_JSON_PATH="${DEST}/tasks/stacks.json"
-mkdir -p "$(dirname "${STACKS_JSON_PATH}")"
-
-{
-  echo '{'
-  echo '  "version": 1,'
-  echo '  "stacks": ['
-
-  for idx in "${!STACKS[@]}"; do
-    stack="${STACKS[$idx]}"
-    if [[ "${#STACKS[@]}" -eq 1 ]]; then
-      project_path='.'
-    else
-      project_path="services/${stack}-hello"
-    fi
-
-    adapter_path="templates/stacks/${stack}/check.adapter.sh"
-
-    owned_paths_json="$(stack_default_owned_paths_json "${stack}")"
-
-    echo '    {'
-    echo "      \"name\": \"${stack}\"," 
-    echo "      \"adapter\": \"${adapter_path}\"," 
-    echo '      "projects": ['
-    echo '        {'
-    echo "          \"path\": \"${project_path}\"," 
-    echo "          \"owned_paths\": ${owned_paths_json}"
-    echo '        }'
-    echo '      ]'
-
-    if [[ "${idx}" -lt $(( ${#STACKS[@]} - 1 )) ]]; then
-      echo '    },'
-    else
-      echo '    }'
-    fi
-  done
-
-  echo '  ]'
-  echo '}'
-} > "${STACKS_JSON_PATH}"
+done < <(find "${DEST}" -type f -name '*.sh' -print0)
 
 prune_transient_artifacts "${DEST}"
 
 echo "[bootstrap] Project created at ${DEST}"
 echo "[bootstrap] Selected stacks: $(IFS=,; echo "${STACKS[*]}")"
+echo "[bootstrap] Root product layout enabled"
 echo "[bootstrap] Suggested next steps:"
 echo "  1) cd ${DEST}"
-echo "  2) ./scripts/smoke-test.sh"
-echo "  3) ./scripts/check.sh --stacks auto"
+echo "  2) ./scripts/check.sh --stacks auto"
