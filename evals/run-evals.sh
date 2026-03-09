@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 TRACE_HELPER_DIR="${REPO_ROOT}/evals/lib"
 DEFAULT_CASES_DIR="${REPO_ROOT}/evals/cases"
 
@@ -43,6 +43,32 @@ error() {
 
 is_integer() {
   [[ "$1" =~ ^[0-9]+$ ]]
+}
+
+normalize_dir_path() {
+  local path="$1"
+  local parent_dir
+  local base_name
+
+  if [[ -d "${path}" ]]; then
+    (
+      cd -- "${path}" && pwd -P
+    )
+    return 0
+  fi
+
+  parent_dir="$(dirname -- "${path}")"
+  base_name="$(basename -- "${path}")"
+  if [[ -d "${parent_dir}" ]]; then
+    printf '%s/%s\n' "$(cd -- "${parent_dir}" && pwd -P)" "${base_name}"
+    return 0
+  fi
+
+  printf '%s\n' "${path}"
+}
+
+cases_dir_is_default() {
+  [[ "${CASES_DIR}" == "${DEFAULT_CASES_DIR}" ]]
 }
 
 while [[ $# -gt 0 ]]; do
@@ -98,6 +124,9 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+CASES_DIR="$(normalize_dir_path "${CASES_DIR}")"
+RESULTS_DIR="$(normalize_dir_path "${RESULTS_DIR}")"
 
 case "${TRACE_MODE}" in
   hybrid|trace-only|local-only)
@@ -196,7 +225,7 @@ collect_selected_case_scripts() {
     return 0
   fi
 
-  if [[ "${CASES_DIR}" != "${DEFAULT_CASES_DIR}" ]] && [[ "${PROFILE_EXPLICIT}" != "true" ]]; then
+  if ! cases_dir_is_default && [[ "${PROFILE_EXPLICIT}" != "true" ]]; then
     for case_script in "${CASES_DIR}"/*.case.sh; do
       [[ -e "${case_script}" ]] || continue
       printf '%s\n' "${case_script}"
@@ -211,7 +240,7 @@ collect_selected_case_scripts() {
       printf '%s\n' "${case_script}"
       continue
     fi
-    if [[ "${CASES_DIR}" == "${DEFAULT_CASES_DIR}" ]]; then
+    if cases_dir_is_default; then
       error "profile '${PROFILE}' is missing case '${case_file}'"
       return 1
     fi
@@ -248,7 +277,7 @@ validate_default_case_profile_mapping() {
   local unmapped_file
   local case_script
 
-  [[ "${CASES_DIR}" == "${DEFAULT_CASES_DIR}" ]] || return 0
+  cases_dir_is_default || return 0
   cases_dir_has_scripts || return 0
 
   actual_file="$(mktemp)"

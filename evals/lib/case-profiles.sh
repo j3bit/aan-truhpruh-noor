@@ -26,6 +26,7 @@ readonly EVAL_SMOKE_CASES=(
   "38-migration-missing-tasks-fail-fast.case.sh"
   "39-profile-missing-case-fails-fast.case.sh"
   "40-unprofiled-case-fails-fast.case.sh"
+  "41-relative-default-cases-dir-fails-fast.case.sh"
 )
 
 readonly EVAL_ORCHESTRATION_EXTRA_CASES=(
