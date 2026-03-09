@@ -220,6 +220,27 @@ collect_selected_case_scripts() {
   return 0
 }
 
+load_selected_case_scripts() {
+  local selected_file
+  local case_script
+
+  selected_case_scripts=()
+  selected_file="$(mktemp)"
+
+  if ! collect_selected_case_scripts > "${selected_file}"; then
+    rm -f "${selected_file}"
+    return 1
+  fi
+
+  while IFS= read -r case_script; do
+    [[ -n "${case_script}" ]] || continue
+    selected_case_scripts+=("${case_script}")
+  done < "${selected_file}"
+
+  rm -f "${selected_file}"
+  return 0
+}
+
 run_case_script() {
   local case_script="$1"
   local case_id="$2"
@@ -301,10 +322,9 @@ echo "[evals] Profile: ${PROFILE}"
 FOUND_EXTERNAL_CASES=0
 selected_case_scripts=()
 if cases_dir_has_scripts; then
-  while IFS= read -r case_script; do
-    [[ -n "${case_script}" ]] || continue
-    selected_case_scripts+=("${case_script}")
-  done < <(collect_selected_case_scripts)
+  if ! load_selected_case_scripts; then
+    exit 2
+  fi
 
   if [[ "${#selected_case_scripts[@]}" -eq 0 ]]; then
     error "no cases matched profile '${PROFILE}' under ${CASES_DIR}"

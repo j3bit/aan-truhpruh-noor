@@ -19,6 +19,12 @@ readonly EVAL_SMOKE_CASES=(
   "30-cross-stack-rename-selection.case.sh"
   "31-owned-path-comma-glob-selection.case.sh"
   "32-custom-registry-path-contract.case.sh"
+  "34-migration-dry-run-no-side-effects.case.sh"
+  "35-go-work-workspace-adapter.case.sh"
+  "36-python-unittest-fallback-outside-tests.case.sh"
+  "37-node-root-package-with-nested-workspaces.case.sh"
+  "38-migration-missing-tasks-fail-fast.case.sh"
+  "39-profile-missing-case-fails-fast.case.sh"
 )
 
 readonly EVAL_ORCHESTRATION_EXTRA_CASES=(
