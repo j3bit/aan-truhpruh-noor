@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd -P)"
 TRACE_HELPER_DIR="${REPO_ROOT}/evals/lib"
+DEFAULT_CASES_DIR="${REPO_ROOT}/evals/cases"
 
-CASES_DIR="${REPO_ROOT}/evals/cases"
+source "${TRACE_HELPER_DIR}/case-profiles.sh"
+
+CASES_DIR="${DEFAULT_CASES_DIR}"
 RESULTS_DIR="${REPO_ROOT}/evals/results"
 TRACE_MODE="hybrid"
 MAX_RETRIES=3
 MAX_LOOP_COUNT=8
 TRACE_TIMEOUT_SECONDS=90
+PROFILE="full"
+PROFILE_EXPLICIT=false
+LIST_CASES=false
 
 usage() {
   cat <<'USAGE'
@@ -19,10 +25,12 @@ Usage: ./evals/run-evals.sh [options]
 Options:
   --cases-dir <path>
   --results-dir <path>
+  --profile <smoke|orchestration|full>
   --trace-mode <hybrid|trace-only|local-only>
   --max-retries <int>
   --max-loop-count <int>
   --trace-timeout-seconds <int>
+  --list-cases
 
 Result format (JSONL):
   {"case_id":"...","passed":true|false,"loop_count":0,"retries":0,"unexpected_files":0,"skill_triggered":false}
@@ -37,6 +45,32 @@ is_integer() {
   [[ "$1" =~ ^[0-9]+$ ]]
 }
 
+normalize_dir_path() {
+  local path="$1"
+  local parent_dir
+  local base_name
+
+  if [[ -d "${path}" ]]; then
+    (
+      cd -- "${path}" && pwd -P
+    )
+    return 0
+  fi
+
+  parent_dir="$(dirname -- "${path}")"
+  base_name="$(basename -- "${path}")"
+  if [[ -d "${parent_dir}" ]]; then
+    printf '%s/%s\n' "$(cd -- "${parent_dir}" && pwd -P)" "${base_name}"
+    return 0
+  fi
+
+  printf '%s\n' "${path}"
+}
+
+cases_dir_is_default() {
+  [[ "${CASES_DIR}" == "${DEFAULT_CASES_DIR}" ]]
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --cases-dir)
@@ -47,6 +81,12 @@ while [[ $# -gt 0 ]]; do
     --results-dir)
       [[ $# -ge 2 ]] || { error "--results-dir requires a value"; exit 2; }
       RESULTS_DIR="$2"
+      shift 2
+      ;;
+    --profile)
+      [[ $# -ge 2 ]] || { error "--profile requires a value"; exit 2; }
+      PROFILE="$2"
+      PROFILE_EXPLICIT=true
       shift 2
       ;;
     --trace-mode)
@@ -69,6 +109,10 @@ while [[ $# -gt 0 ]]; do
       TRACE_TIMEOUT_SECONDS="$2"
       shift 2
       ;;
+    --list-cases)
+      LIST_CASES=true
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -81,6 +125,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+CASES_DIR="$(normalize_dir_path "${CASES_DIR}")"
+RESULTS_DIR="$(normalize_dir_path "${RESULTS_DIR}")"
+
 case "${TRACE_MODE}" in
   hybrid|trace-only|local-only)
     ;;
@@ -89,6 +136,11 @@ case "${TRACE_MODE}" in
     exit 2
     ;;
 esac
+
+if ! is_known_eval_profile "${PROFILE}"; then
+  error "Unsupported profile '${PROFILE}'. Use: smoke, orchestration, full"
+  exit 2
+fi
 
 is_integer "${MAX_RETRIES}" || { error "--max-retries must be an integer"; exit 2; }
 is_integer "${MAX_LOOP_COUNT}" || { error "--max-loop-count must be an integer"; exit 2; }
@@ -155,6 +207,108 @@ write_result() {
 
   printf '{"case_id":"%s","passed":%s,"loop_count":%s,"retries":%s,"unexpected_files":%s,"skill_triggered":%s}\n' \
     "$case_id" "$pass_flag" "$loop_count" "$retries" "$unexpected_files" "$skill_triggered" >> "${RESULT_FILE}"
+}
+
+cases_dir_has_scripts() {
+  local case_script
+  for case_script in "${CASES_DIR}"/*.case.sh; do
+    [[ -e "${case_script}" ]] && return 0
+  done
+  return 1
+}
+
+collect_selected_case_scripts() {
+  local case_file
+  local case_script
+
+  if ! cases_dir_has_scripts; then
+    return 0
+  fi
+
+  if ! cases_dir_is_default && [[ "${PROFILE_EXPLICIT}" != "true" ]]; then
+    for case_script in "${CASES_DIR}"/*.case.sh; do
+      [[ -e "${case_script}" ]] || continue
+      printf '%s\n' "${case_script}"
+    done
+    return 0
+  fi
+
+  while IFS= read -r case_file; do
+    [[ -n "${case_file}" ]] || continue
+    case_script="${CASES_DIR}/${case_file}"
+    if [[ -f "${case_script}" ]]; then
+      printf '%s\n' "${case_script}"
+      continue
+    fi
+    if cases_dir_is_default; then
+      error "profile '${PROFILE}' is missing case '${case_file}'"
+      return 1
+    fi
+  done < <(print_eval_profile_cases "${PROFILE}")
+
+  return 0
+}
+
+load_selected_case_scripts() {
+  local selected_file
+  local case_script
+
+  selected_case_scripts=()
+  selected_file="$(mktemp)"
+
+  if ! collect_selected_case_scripts > "${selected_file}"; then
+    rm -f "${selected_file}"
+    return 1
+  fi
+
+  while IFS= read -r case_script; do
+    [[ -n "${case_script}" ]] || continue
+    selected_case_scripts+=("${case_script}")
+  done < "${selected_file}"
+
+  rm -f "${selected_file}"
+  return 0
+}
+
+validate_default_case_profile_mapping() {
+  local actual_file
+  local mapped_file
+  local missing_file
+  local unmapped_file
+  local case_script
+
+  cases_dir_is_default || return 0
+  cases_dir_has_scripts || return 0
+
+  actual_file="$(mktemp)"
+  mapped_file="$(mktemp)"
+  missing_file="$(mktemp)"
+  unmapped_file="$(mktemp)"
+
+  for case_script in "${CASES_DIR}"/*.case.sh; do
+    [[ -e "${case_script}" ]] || continue
+    basename "${case_script}" >> "${actual_file}"
+  done
+  sort -u "${actual_file}" -o "${actual_file}"
+  print_all_profile_case_files | sort -u > "${mapped_file}"
+
+  comm -23 "${actual_file}" "${mapped_file}" > "${unmapped_file}" || true
+  comm -13 "${actual_file}" "${mapped_file}" > "${missing_file}" || true
+
+  if [[ -s "${unmapped_file}" ]]; then
+    error "unprofiled eval cases found under ${CASES_DIR}: $(paste -sd ',' "${unmapped_file}")"
+    rm -f "${actual_file}" "${mapped_file}" "${missing_file}" "${unmapped_file}"
+    return 1
+  fi
+
+  if [[ -s "${missing_file}" ]]; then
+    error "profile-mapped eval cases are missing under ${CASES_DIR}: $(paste -sd ',' "${missing_file}")"
+    rm -f "${actual_file}" "${mapped_file}" "${missing_file}" "${unmapped_file}"
+    return 1
+  fi
+
+  rm -f "${actual_file}" "${mapped_file}" "${missing_file}" "${unmapped_file}"
+  return 0
 }
 
 run_case_script() {
@@ -233,13 +387,39 @@ run_case_script() {
   rm -f "${before_file}" "${after_file}" "${new_files_file}" "${meta_file}"
 }
 
+echo "[evals] Profile: ${PROFILE}"
+
 FOUND_EXTERNAL_CASES=0
-for case_script in "${CASES_DIR}"/*.case.sh; do
-  if [[ ! -e "${case_script}" ]]; then
-    break
+selected_case_scripts=()
+if cases_dir_has_scripts; then
+  if ! validate_default_case_profile_mapping; then
+    exit 2
+  fi
+
+  if ! load_selected_case_scripts; then
+    exit 2
+  fi
+
+  if [[ "${#selected_case_scripts[@]}" -eq 0 ]]; then
+    error "no cases matched profile '${PROFILE}' under ${CASES_DIR}"
+    exit 2
   fi
 
   FOUND_EXTERNAL_CASES=1
+fi
+
+if [[ "${LIST_CASES}" == "true" ]]; then
+  if [[ "${FOUND_EXTERNAL_CASES}" -eq 0 ]]; then
+    error "--list-cases requires at least one *.case.sh file under ${CASES_DIR}"
+    exit 2
+  fi
+  for case_script in "${selected_case_scripts[@]}"; do
+    basename "${case_script}" .case.sh
+  done
+  exit 0
+fi
+
+for case_script in "${selected_case_scripts[@]}"; do
   case_id="$(basename "${case_script}" .case.sh)"
   TOTAL=$((TOTAL + 1))
   run_case_script "${case_script}" "${case_id}"

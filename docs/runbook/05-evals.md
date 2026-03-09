@@ -7,13 +7,20 @@ Protect process consistency when templates, rules, or automation change.
 ## How To Run
 
 ```bash
-./evals/run-evals.sh
+./evals/run-evals.sh --profile smoke
 ```
+
+Built-in profiles:
+
+- `smoke`: fast contract, bootstrap, and stack-selection regressions for routine PRs.
+- `orchestration`: `smoke` plus orchestration, QA/static, worker-result, and CI-contract cases.
+- `full`: `orchestration` plus trace fallback and thrash/stress cases.
 
 Trace-aware mode options:
 
 ```bash
 ./evals/run-evals.sh \
+  --profile orchestration \
   --trace-mode hybrid \
   --max-retries 3 \
   --max-loop-count 8 \
@@ -23,7 +30,13 @@ Trace-aware mode options:
 Local-only mode (no trace attempt):
 
 ```bash
-./evals/run-evals.sh --trace-mode local-only
+./evals/run-evals.sh --profile full --trace-mode local-only
+```
+
+List the cases selected by a profile:
+
+```bash
+./evals/run-evals.sh --profile smoke --list-cases
 ```
 
 ## Case Authoring

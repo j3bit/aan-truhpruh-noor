@@ -30,7 +30,7 @@ The repository root is the working product directory. A default `services/*` lay
 8. Run QA/static hard gate after orchestration:
    - `./scripts/qa-pipeline.sh --project-dir . --stacks auto`
 9. Create one PR per task and merge in dependency order.
-10. Run `./evals/run-evals.sh` and add/adjust cases after failures.
+10. Run `./evals/run-evals.sh --profile smoke` during normal iteration, or `./evals/run-evals.sh --profile full` before merging template/orchestration changes, and add/adjust cases after failures.
 
 ## Required Contracts
 
