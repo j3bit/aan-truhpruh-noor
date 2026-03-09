@@ -25,6 +25,7 @@ readonly EVAL_SMOKE_CASES=(
   "37-node-root-package-with-nested-workspaces.case.sh"
   "38-migration-missing-tasks-fail-fast.case.sh"
   "39-profile-missing-case-fails-fast.case.sh"
+  "40-unprofiled-case-fails-fast.case.sh"
 )
 
 readonly EVAL_ORCHESTRATION_EXTRA_CASES=(
@@ -81,4 +82,12 @@ print_eval_profile_cases() {
       return 1
       ;;
   esac
+}
+
+print_all_profile_case_files() {
+  printf '%s\n' \
+    "${EVAL_SMOKE_CASES[@]}" \
+    "${EVAL_ORCHESTRATION_EXTRA_CASES[@]}" \
+    "${EVAL_FULL_EXTRA_CASES[@]}" \
+    | awk 'NF && !seen[$0]++'
 }

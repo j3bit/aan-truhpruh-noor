@@ -241,6 +241,47 @@ load_selected_case_scripts() {
   return 0
 }
 
+validate_default_case_profile_mapping() {
+  local actual_file
+  local mapped_file
+  local missing_file
+  local unmapped_file
+  local case_script
+
+  [[ "${CASES_DIR}" == "${DEFAULT_CASES_DIR}" ]] || return 0
+  cases_dir_has_scripts || return 0
+
+  actual_file="$(mktemp)"
+  mapped_file="$(mktemp)"
+  missing_file="$(mktemp)"
+  unmapped_file="$(mktemp)"
+
+  for case_script in "${CASES_DIR}"/*.case.sh; do
+    [[ -e "${case_script}" ]] || continue
+    basename "${case_script}" >> "${actual_file}"
+  done
+  sort -u "${actual_file}" -o "${actual_file}"
+  print_all_profile_case_files | sort -u > "${mapped_file}"
+
+  comm -23 "${actual_file}" "${mapped_file}" > "${unmapped_file}" || true
+  comm -13 "${actual_file}" "${mapped_file}" > "${missing_file}" || true
+
+  if [[ -s "${unmapped_file}" ]]; then
+    error "unprofiled eval cases found under ${CASES_DIR}: $(paste -sd ',' "${unmapped_file}")"
+    rm -f "${actual_file}" "${mapped_file}" "${missing_file}" "${unmapped_file}"
+    return 1
+  fi
+
+  if [[ -s "${missing_file}" ]]; then
+    error "profile-mapped eval cases are missing under ${CASES_DIR}: $(paste -sd ',' "${missing_file}")"
+    rm -f "${actual_file}" "${mapped_file}" "${missing_file}" "${unmapped_file}"
+    return 1
+  fi
+
+  rm -f "${actual_file}" "${mapped_file}" "${missing_file}" "${unmapped_file}"
+  return 0
+}
+
 run_case_script() {
   local case_script="$1"
   local case_id="$2"
@@ -322,6 +363,10 @@ echo "[evals] Profile: ${PROFILE}"
 FOUND_EXTERNAL_CASES=0
 selected_case_scripts=()
 if cases_dir_has_scripts; then
+  if ! validate_default_case_profile_mapping; then
+    exit 2
+  fi
+
   if ! load_selected_case_scripts; then
     exit 2
   fi
